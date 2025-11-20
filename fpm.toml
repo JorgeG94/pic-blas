@@ -28,9 +28,9 @@ implicit-external = true
 source-form = "free"
 
 [dependencies]
-test-drive.git = "https://github.com/fortran-lang/test-drive"
+test-drive.git = "https://github.com/JorgeG94/test-drive"
 pic = { git = "https://github.com/JorgeG94/pic.git", branch = "feat/move_blas_out"}
-openmp="*"
+#openmp="*"
 
 [extra.fortitude.check]
 select = ["C", "E", "S"]
