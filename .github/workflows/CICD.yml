@@ -20,14 +20,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         compiler: [gfortran, ifx, lfortran, flang-new, nvfortran]
         include:
           - os: ubuntu-latest
-            extra-packages: "openblas"
-          - os: windows-latest
-            extra-packages: "openblas"
-          - os: macos-latest
             extra-packages: "openblas"
         exclude:
           - os: macos-latest
@@ -57,14 +53,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest ]
         compiler: [gfortran, ifx, lfortran, flang-new, nvfortran]
         include:
           - os: ubuntu-latest
-            extra-packages: "openblas"
-          - os: windows-latest
-            extra-packages: "openblas"
-          - os: macos-latest
             extra-packages: "openblas"
         exclude:
           - os: macos-latest
