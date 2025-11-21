@@ -3,7 +3,7 @@
 PIC-BLAS is an extension of the PIC library aimed at creating a nice and simple BLAS interface that uses
 the native Fortran modules instead of going through C.
 
-The main reason is to explore the limits of the Fortran modules and actively report these issues to the 
+The main reason is to explore the limits of the Fortran modules and actively report these issues to the
 right developers and channels to get them fixed.
 
 
@@ -16,7 +16,7 @@ Briefly, for a minimal build  you need:
 - CMake (at least 3.22) or the Fortran Package Manager (at least 0.12.0)
 - A Fortran coblasler
 - An internet connection to pull the dependencies
-- An BLAS library installed 
+- An BLAS library installed
 
 
 ### Building with CMake
@@ -35,9 +35,9 @@ To run the tests, from the build directory simply run: `ctest`
 
 ### Building with FPM
 
-The easiest way to build with the FPM is to use the coblasler wrappers provided for Fortran i.e. `blasfort` or `blasf90`. 
+The easiest way to build with the FPM is to use the coblasler wrappers provided for Fortran i.e. `blasfort` or `blasf90`.
 
-These will make life simpler with linking and coblaslation flags. 
+These will make life simpler with linking and coblaslation flags.
 
 The same `$PICBLAS_BASE` and `$PICBLAS_ROOT` will be used here. Simply:
 
@@ -63,7 +63,7 @@ Comments in the code that are prefixed with `!!` are considered documentation co
 
 ## Contributing
 
-Please see the PIC [contributing guidelines](https://jorgeg94.github.io/pic/page/contributing.html) for information on how to contribute to the project. 
+Please see the PIC [contributing guidelines](https://jorgeg94.github.io/pic/page/contributing.html) for information on how to contribute to the project.
 
 ## Using PIC-BLAS in your work
 
