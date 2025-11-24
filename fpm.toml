@@ -29,7 +29,7 @@ source-form = "free"
 
 [dependencies]
 test-drive.git = "https://github.com/JorgeG94/test-drive"
-pic = { git = "https://github.com/JorgeG94/pic.git", branch = "feat/move_blas_out"}
+pic = { git = "https://github.com/JorgeG94/pic.git", branch = "main"}
 #openmp="*"
 
 [extra.fortitude.check]
