@@ -37,3 +37,4 @@ select = ["C", "E", "S"]
 ignore = ["C003"]
 line-length = 132
 per-file-ignores = { "pic_blas_interfaces.F90" = ["C071"] }
+per-file-ignores = { "pic_lapack_interfaces.F90" = ["C071"] }
