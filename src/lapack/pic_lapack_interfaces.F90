@@ -576,7 +576,6 @@ contains
       if (present(info)) info = l_info
    end subroutine pic_dgesvd
 
-
    subroutine pic_stpttr(AP, A, uplo, info)
       !! packed triangular -> full storage; writes only the uplo triangle
       real(sp), intent(in) :: AP(:)
