@@ -15,7 +15,7 @@ module test_pic_lapack_interfaces_unpack
    !  One n in each regime, and both sides of each boundary. The dispatch
    !  points are 56 and 2560; getting these wrong is how a rewrite of one
    !  branch passes while another stays broken.
-   integer(default_int), parameter :: regime_sizes(6) = &
+   integer(default_int), parameter :: regime_sizes(*) = &
                                       [7_default_int, 55_default_int, 56_default_int, &
                                        200_default_int, 2559_default_int, 2560_default_int]
 
@@ -87,7 +87,8 @@ contains
    !  [a11, a12, a22, a13, a23, a33].
    subroutine test_sym_upper_known(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: AP(6), A(3, 3)
+      integer(default_int), parameter :: n = 3_default_int
+      real(dp) :: AP(n*(n + 1)/2), A(n, n)
       AP = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp]
       A = -99.0_dp
       call pic_unpack(AP, A, "S", "U")
@@ -100,7 +101,8 @@ contains
 
    subroutine test_anti_upper_known(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: AP(6), A(3, 3)
+      integer(default_int), parameter :: n = 3_default_int
+      real(dp) :: AP(n*(n + 1)/2), A(n, n)
       AP = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp]
       A = -99.0_dp
       call pic_unpack(AP, A, "A", "U")
@@ -114,7 +116,8 @@ contains
    !  Packed lower is [a11, a21, a31, a22, a32, a33].
    subroutine test_sym_lower_known(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: AP(6), A(3, 3)
+      integer(default_int), parameter :: n = 3_default_int
+      real(dp) :: AP(n*(n + 1)/2), A(n, n)
       AP = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp]
       A = -99.0_dp
       call pic_unpack(AP, A, "S", "L")
@@ -127,7 +130,8 @@ contains
 
    subroutine test_anti_lower_known(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: AP(6), A(3, 3)
+      integer(default_int), parameter :: n = 3_default_int
+      real(dp) :: AP(n*(n + 1)/2), A(n, n)
       AP = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp]
       A = -99.0_dp
       call pic_unpack(AP, A, "A", "L")
@@ -143,7 +147,7 @@ contains
    subroutine test_all_regimes(error)
       type(error_type), allocatable, intent(out) :: error
       real(dp), allocatable :: AP(:), A(:, :), R(:, :)
-      character(len=1) :: modes(2) = ["S", "A"], uplos(2) = ["U", "L"]
+      character(len=1), parameter :: modes(2) = ["S", "A"], uplos(2) = ["U", "L"]
       integer(default_int) :: n
       integer :: t, im, iu
 
@@ -172,7 +176,7 @@ contains
    subroutine test_x_matches(error)
       type(error_type), allocatable, intent(out) :: error
       real(dp), allocatable :: AP(:), A(:, :), B(:, :)
-      character(len=1) :: modes(2) = ["S", "A"], uplos(2) = ["U", "L"]
+      character(len=1), parameter :: modes(2) = ["S", "A"], uplos(2) = ["U", "L"]
       integer(default_int) :: n
       integer :: t, im, iu
 
@@ -199,7 +203,8 @@ contains
 
    subroutine test_defaults(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: AP(6), A(3, 3), B(3, 3)
+      integer(default_int), parameter :: n = 3_default_int
+      real(dp) :: AP(n*(n + 1)/2), A(n, n), B(n, n)
       AP = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp]
       call pic_unpack(AP, A)
       call pic_unpack(AP, B, "S", "U")
@@ -254,7 +259,7 @@ contains
       real(dp), allocatable :: AP(:), A(:, :), B(:, :)
       integer(default_int) :: n
       integer :: t
-      integer(default_int) :: ns(2) = [200_default_int, 2600_default_int]
+      integer(default_int), parameter :: ns(2) = [200_default_int, 2600_default_int]
 
       do t = 1, 2
          n = ns(t)
@@ -270,7 +275,8 @@ contains
 
    subroutine test_single(error)
       type(error_type), allocatable, intent(out) :: error
-      real(sp) :: AP(6), A(3, 3)
+      integer(default_int), parameter :: n = 3_default_int
+      real(sp) :: AP(n*(n + 1)/2), A(n, n)
       AP = [1.0_sp, 2.0_sp, 3.0_sp, 4.0_sp, 5.0_sp, 6.0_sp]
       call pic_unpack(AP, A, "A", "U")
       call check(error, all(A(1, :) == [0.0_sp, 2.0_sp, 4.0_sp]))

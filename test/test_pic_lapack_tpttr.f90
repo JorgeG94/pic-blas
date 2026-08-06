@@ -24,7 +24,8 @@ contains
 
    subroutine test_tpttr_upper(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: AP(6), A(3, 3)
+      integer(default_int), parameter :: n = 3_default_int
+      real(dp) :: AP(n*(n + 1)/2), A(n, n)
       integer(default_int) :: info
       AP = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp]
       A = 0.0_dp
@@ -38,7 +39,8 @@ contains
 
    subroutine test_tpttr_lower(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: AP(6), A(3, 3)
+      integer(default_int), parameter :: n = 3_default_int
+      real(dp) :: AP(n*(n + 1)/2), A(n, n)
       integer(default_int) :: info
       AP = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp]
       A = 0.0_dp
@@ -55,7 +57,8 @@ contains
    !  feeds SYMM or SYRK, so it is worth pinning down.
    subroutine test_tpttr_leaves(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: AP(6), A(3, 3)
+      integer(default_int), parameter :: n = 3_default_int
+      real(dp) :: AP(n*(n + 1)/2), A(n, n)
       integer(default_int) :: info
       AP = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp]
       A = -42.0_dp
@@ -72,7 +75,7 @@ contains
       integer(default_int), parameter :: n = 17_default_int
       real(dp) :: AP(n*(n + 1)/2), BP(n*(n + 1)/2), A(n, n)
       integer(default_int) :: i, info
-      character(len=1) :: uplos(2) = ["U", "L"]
+      character(len=1), parameter :: uplos(2) = ["U", "L"]
       integer :: k
 
       do k = 1, 2

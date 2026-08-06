@@ -48,7 +48,8 @@ contains
    subroutine test_solve(error)
       type(error_type), allocatable, intent(out) :: error
       real(dp) :: A(3, 3), B(3, 1)
-      integer(default_int) :: ipiv(3), info
+      integer(default_int) ::  info
+      integer(default_int) :: ipiv(3)
 
       call make_a(A)
       !  A * [1,2,3]' = [7, -8, 18]'
@@ -65,7 +66,8 @@ contains
    subroutine test_solve_trans(error)
       type(error_type), allocatable, intent(out) :: error
       real(dp) :: A(3, 3), Aorig(3, 3), B(3, 1), rhs(3)
-      integer(default_int) :: ipiv(3), info, i, j
+      integer(default_int) ::  info, i, j
+      integer(default_int) :: ipiv(3)
 
       call make_a(A)
       Aorig = A
@@ -89,7 +91,8 @@ contains
    subroutine test_multi_rhs(error)
       type(error_type), allocatable, intent(out) :: error
       real(dp) :: A(3, 3), Aorig(3, 3), B(3, 2), X(3, 2), r(3)
-      integer(default_int) :: ipiv(3), info, i, j, k
+      integer(default_int) ::  info, i, j, k
+      integer(default_int) :: ipiv(3)
 
       call make_a(A)
       Aorig = A
@@ -114,7 +117,8 @@ contains
    subroutine test_inverse(error)
       type(error_type), allocatable, intent(out) :: error
       real(dp) :: A(3, 3), Aorig(3, 3), prod(3, 3)
-      integer(default_int) :: ipiv(3), info, i, j, k
+      integer(default_int) ::  info, i, j, k
+      integer(default_int) :: ipiv(3)
 
       call make_a(A)
       Aorig = A
@@ -152,8 +156,10 @@ contains
    !  determinant code unchanged while the factorisation underneath changes.
    subroutine test_determinant(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: A(3, 3), det
-      integer(default_int) :: ipiv(3), info, i
+      real(dp) ::  det
+      real(dp) :: A(3, 3)
+      integer(default_int) ::  info, i
+      integer(default_int) :: ipiv(3)
 
       call make_a(A)
       call pic_getrf(A, ipiv, info)
@@ -174,7 +180,8 @@ contains
    subroutine test_l_sign(error)
       type(error_type), allocatable, intent(out) :: error
       real(dp) :: A(2, 2)
-      integer(default_int) :: ipiv(2), info
+      integer(default_int) ::  info
+      integer(default_int) :: ipiv(2)
 
       A(1, :) = [2.0_dp, 1.0_dp]
       A(2, :) = [6.0_dp, 5.0_dp]
@@ -196,7 +203,8 @@ contains
    subroutine test_singular(error)
       type(error_type), allocatable, intent(out) :: error
       real(dp) :: A(3, 3)
-      integer(default_int) :: ipiv(3), info
+      integer(default_int) ::  info
+      integer(default_int) :: ipiv(3)
 
       A(1, :) = [1.0_dp, 2.0_dp, 3.0_dp]
       A(2, :) = [2.0_dp, 4.0_dp, 6.0_dp]
@@ -213,8 +221,10 @@ contains
    !  back tiny where info came back clean.
    subroutine test_numerically_singular(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: A(3, 3), rcond, anorm
-      integer(default_int) :: ipiv(3), info
+      real(dp) ::  rcond, anorm
+      real(dp) :: A(3, 3)
+      integer(default_int) ::  info
+      integer(default_int) :: ipiv(3)
 
       !  row 3 = row 1 + row 2, with multipliers that are not representable
       A(1, :) = [1.0_dp, 2.0_dp, 3.0_dp]
@@ -232,8 +242,10 @@ contains
 
    subroutine test_gecon(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: A(4, 4), rcond, anorm
-      integer(default_int) :: ipiv(4), info, i
+      real(dp) ::  rcond, anorm
+      real(dp) :: A(4, 4)
+      integer(default_int) ::  info, i
+      integer(default_int) :: ipiv(4)
 
       A = 0.0_dp
       do i = 1, 4
@@ -252,7 +264,8 @@ contains
    subroutine test_single(error)
       type(error_type), allocatable, intent(out) :: error
       real(sp) :: A(3, 3), B(3, 1)
-      integer(default_int) :: ipiv(3), info
+      integer(default_int) ::  info
+      integer(default_int) :: ipiv(3)
 
       A(1, :) = [2.0_sp, 1.0_sp, 1.0_sp]
       A(2, :) = [4.0_sp, -6.0_sp, 0.0_sp]
