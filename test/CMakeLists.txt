@@ -13,7 +13,7 @@ set(blas_tests
     "pic_blas_symm")
 
 set(lapack_tests "pic_lapack_syev" "pic_lapack_syevd" "pic_lapack_gesvd"
-                 "pic_lapack_tpttr" "pic_lapack_unpack")
+                 "pic_lapack_tpttr" "pic_lapack_unpack" "pic_lapack_getrf")
 
 find_package(Threads REQUIRED)
 set(blas-test-srcs "main_tests.f90")
