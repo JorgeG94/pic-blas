@@ -177,7 +177,6 @@ contains
       if (allocated(error)) return
    end subroutine test_dgemm_beta_accumulate
 
-
    !  The point of the explicit-dimension entry: a block living inside a
    !  larger array, where the leading dimension is bigger than the number of
    !  rows. pic_gemm would need a section here, and a section of a strided
