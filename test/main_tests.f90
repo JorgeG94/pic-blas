@@ -21,6 +21,7 @@ program pic_tester
    use test_pic_blas_interfaces_symm, only: collect_pic_symm_tests
    use test_pic_lapack_interfaces_getrf, only: collect_pic_lapack_getrf_tests
    use test_pic_blas_interfaces_ger, only: collect_pic_ger_tests
+   use test_pic_blas_interfaces_level1_x, only: collect_pic_level1_x_tests
    ! add here the module you want to test
    implicit none
    integer(int32) :: stat, is
@@ -51,7 +52,8 @@ program pic_tester
                 new_testsuite("pic_lapack_unpack", collect_pic_lapack_unpack_tests), &
                 new_testsuite("pic_blas_symm", collect_pic_symm_tests), &
                 new_testsuite("pic_lapack_getrf", collect_pic_lapack_getrf_tests), &
-                new_testsuite("pic_blas_ger", collect_pic_ger_tests) &
+                new_testsuite("pic_blas_ger", collect_pic_ger_tests), &
+                new_testsuite("pic_blas_level1_x", collect_pic_level1_x_tests) &
                 ]
 
    call get_argument(1, suite_name)

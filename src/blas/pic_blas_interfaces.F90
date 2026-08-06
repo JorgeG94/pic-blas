@@ -26,6 +26,9 @@ module pic_blas_interfaces
    public :: pic_gemm, pic_gemv, pic_asum, pic_axpy, pic_copy, pic_dot, pic_scal, pic_iamax
    public :: pic_symm, pic_syrk, pic_syr2k
    public :: pic_gemm_x, pic_gemv_x, pic_ger, pic_ger_x
+   public :: pic_dot_x, pic_axpy_x, pic_copy_x, pic_scal_x
+   public :: pic_sdot_x, pic_ddot_x, pic_saxpy_x, pic_daxpy_x
+   public :: pic_scopy_x, pic_dcopy_x, pic_sscal_x, pic_dscal_x
    public :: pic_sgemv_x, pic_dgemv_x, pic_sger_x, pic_dger_x
    public :: pic_sgemm_x, pic_dgemm_x
 
@@ -568,6 +571,45 @@ module pic_blas_interfaces
          real(dp), intent(inout) :: a(lda, *)
       end subroutine dger
    end interface blas_ger
+
+   interface pic_dot_x
+      !! DOT with explicit length and strides
+      !!
+      !! Usage: r = pic_dot_x(n, x, incx, y, incy)
+      !!
+      !! The assumed-shape pic_dot builds an array descriptor at every call.
+      !! That is nothing next to a GEMM but it is not nothing next to a DOT:
+      !! measured against the raw BLAS on contiguous vectors, 1.26x at n=10,
+      !! 1.22x at n=100, 1.04x at n=500 and 1.00x from n=2000. About 4 ns,
+      !! fixed. In a loop nest three deep over short vectors that is real.
+      !!
+      !! It also takes strides, so a row of a matrix goes straight in rather
+      !! than through a section that would have to be packed.
+      !!
+      !! Same calling rule as the other _x entries: pass an array element and
+      !! you must name the specific procedure, because generic resolution
+      !! matches on rank.
+      module procedure :: pic_sdot_x
+      module procedure :: pic_ddot_x
+   end interface pic_dot_x
+
+   interface pic_axpy_x
+      !! AXPY with explicit length and strides: y := alpha*x + y
+      module procedure :: pic_saxpy_x
+      module procedure :: pic_daxpy_x
+   end interface pic_axpy_x
+
+   interface pic_copy_x
+      !! COPY with explicit length and strides: y := x
+      module procedure :: pic_scopy_x
+      module procedure :: pic_dcopy_x
+   end interface pic_copy_x
+
+   interface pic_scal_x
+      !! SCAL with explicit length and stride: x := alpha*x
+      module procedure :: pic_sscal_x
+      module procedure :: pic_dscal_x
+   end interface pic_scal_x
 
    interface blas_gemm
       !! explicit interface for BLAS GEMM routines
@@ -1488,5 +1530,79 @@ contains
       lda = max(1_default_int, m)
       call blas_ger(m, n, l_alpha, x, 1_default_int, y, 1_default_int, A, lda)
    end subroutine pic_dger
+
+   pure function pic_sdot_x(n, x, incx, y, incy) result(res)
+      !! DOT with explicit length and strides; forwards to the BLAS unchanged
+      integer(default_int), intent(in) :: n, incx, incy
+      real(sp), intent(in) :: x(*), y(*)
+      real(sp) :: res
+
+      res = blas_dot(n, x, incx, y, incy)
+   end function pic_sdot_x
+
+   pure subroutine pic_saxpy_x(n, alpha, x, incx, y, incy)
+      !! AXPY with explicit length and strides; forwards unchanged
+      integer(default_int), intent(in) :: n, incx, incy
+      real(sp), intent(in) :: alpha
+      real(sp), intent(in) :: x(*)
+      real(sp), intent(inout) :: y(*)
+
+      call blas_axpy(n, alpha, x, incx, y, incy)
+   end subroutine pic_saxpy_x
+
+   pure subroutine pic_scopy_x(n, x, incx, y, incy)
+      !! COPY with explicit length and strides; forwards unchanged
+      integer(default_int), intent(in) :: n, incx, incy
+      real(sp), intent(in) :: x(*)
+      real(sp), intent(inout) :: y(*)
+
+      call blas_copy(n, x, incx, y, incy)
+   end subroutine pic_scopy_x
+
+   pure subroutine pic_sscal_x(n, alpha, x, incx)
+      !! SCAL with explicit length and stride; forwards unchanged
+      integer(default_int), intent(in) :: n, incx
+      real(sp), intent(in) :: alpha
+      real(sp), intent(inout) :: x(*)
+
+      call blas_scal(n, alpha, x, incx)
+   end subroutine pic_sscal_x
+
+   pure function pic_ddot_x(n, x, incx, y, incy) result(res)
+      !! DOT with explicit length and strides; forwards to the BLAS unchanged
+      integer(default_int), intent(in) :: n, incx, incy
+      real(dp), intent(in) :: x(*), y(*)
+      real(dp) :: res
+
+      res = blas_dot(n, x, incx, y, incy)
+   end function pic_ddot_x
+
+   pure subroutine pic_daxpy_x(n, alpha, x, incx, y, incy)
+      !! AXPY with explicit length and strides; forwards unchanged
+      integer(default_int), intent(in) :: n, incx, incy
+      real(dp), intent(in) :: alpha
+      real(dp), intent(in) :: x(*)
+      real(dp), intent(inout) :: y(*)
+
+      call blas_axpy(n, alpha, x, incx, y, incy)
+   end subroutine pic_daxpy_x
+
+   pure subroutine pic_dcopy_x(n, x, incx, y, incy)
+      !! COPY with explicit length and strides; forwards unchanged
+      integer(default_int), intent(in) :: n, incx, incy
+      real(dp), intent(in) :: x(*)
+      real(dp), intent(inout) :: y(*)
+
+      call blas_copy(n, x, incx, y, incy)
+   end subroutine pic_dcopy_x
+
+   pure subroutine pic_dscal_x(n, alpha, x, incx)
+      !! SCAL with explicit length and stride; forwards unchanged
+      integer(default_int), intent(in) :: n, incx
+      real(dp), intent(in) :: alpha
+      real(dp), intent(inout) :: x(*)
+
+      call blas_scal(n, alpha, x, incx)
+   end subroutine pic_dscal_x
 
 end module pic_blas_interfaces

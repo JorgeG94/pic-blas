@@ -11,7 +11,8 @@ set(blas_tests
     "pic_blas_scal"
     "pic_blas_iamax"
     "pic_blas_symm"
-    "pic_blas_ger")
+    "pic_blas_ger"
+    "pic_blas_level1_x")
 
 set(lapack_tests "pic_lapack_syev" "pic_lapack_syevd" "pic_lapack_gesvd"
                  "pic_lapack_tpttr" "pic_lapack_unpack" "pic_lapack_getrf")
