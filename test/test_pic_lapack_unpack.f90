@@ -34,6 +34,7 @@ contains
                   new_unittest("unpack_defaults_to_symmetric_upper", test_defaults), &
                   new_unittest("unpack_antisymmetric_diagonal_is_zero", test_anti_diagonal), &
                   new_unittest("unpack_block_size_does_not_change_result", test_nb_invariant), &
+                  new_unittest("unpack_x_nb_is_optional", test_x_nb_optional), &
                   new_unittest("unpack_single_precision", test_single) &
                   ]
 
@@ -243,6 +244,29 @@ contains
       call check(error, all(A == B))
       deallocate (AP, A, B)
    end subroutine test_nb_invariant
+
+   !  nb is optional on the explicit-dimension entry so a caller does not
+   !  have to carry this library's tuning constant. Omitting it must give
+   !  the same answer as passing the value it defaults to, in the only
+   !  regime that reads nb and in one that does not.
+   subroutine test_x_nb_optional(error)
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable :: AP(:), A(:, :), B(:, :)
+      integer(default_int) :: n
+      integer :: t
+      integer(default_int) :: ns(2) = [200_default_int, 2600_default_int]
+
+      do t = 1, 2
+         n = ns(t)
+         allocate (AP(n*(n + 1)/2), A(n, n), B(n, n))
+         call fill(AP)
+         call pic_unpack_x(n, AP, A, n, "A", "U")
+         call pic_unpack_x(n, AP, B, n, "A", "U", 8_default_int)
+         call check(error, all(A == B))
+         deallocate (AP, A, B)
+         if (allocated(error)) return
+      end do
+   end subroutine test_x_nb_optional
 
    subroutine test_single(error)
       type(error_type), allocatable, intent(out) :: error

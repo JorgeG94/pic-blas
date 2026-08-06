@@ -157,7 +157,7 @@ module pic_lapack_interfaces
    interface pic_unpack_x
       !! pic_unpack with explicit dimensions, in the shape the BLAS uses
       !!
-      !! Usage: call pic_unpack_x(n, AP, A, lda, mode, uplo, nb)
+      !! Usage: call pic_unpack_x(n, AP, A, lda, mode, uplo, [nb])
       !!
       !! Same operation and same size dispatch, but order and leading
       !! dimension are passed and nothing is optional, so no array descriptor
@@ -773,12 +773,19 @@ contains
       real(sp), intent(in) :: AP(*)
       real(sp), intent(out) :: A(lda, *)
       character(len=1), intent(in) :: mode, uplo
-      integer(default_int), intent(in) :: nb
+      integer(default_int), intent(in), optional :: nb
       logical :: upper, anti
-      integer(default_int) :: ii, jj, ihi, jhi, i, j, ij, base
+      integer(default_int) :: l_nb, ii, jj, ihi, jhi, i, j, ij, base
       real(sp) :: v, sgn
 
       if (n <= 0) return
+
+      !  Optional so a caller does not have to carry this library's tuning
+      !  constant around. The present() check is a couple of ns against the
+      !  5 ns of array descriptor this entry point exists to avoid, so it
+      !  does not give back what _x is for.
+      l_nb = unpack_nb
+      if (present(nb)) l_nb = nb
 
       upper = (uplo == "U" .or. uplo == "u")
       anti = (mode == "A" .or. mode == "a")
@@ -913,10 +920,10 @@ contains
             !$omp end parallel do
             !$omp parallel do private(ii, jhi, ihi, i, j) &
             !$omp             schedule(dynamic) if(n >= unpack_par_min)
-            do jj = 1, n, nb
-               jhi = min(jj + nb - 1, n)
-               do ii = 1, jhi, nb
-                  ihi = min(ii + nb - 1, n)
+            do jj = 1, n, l_nb
+               jhi = min(jj + l_nb - 1, n)
+               do ii = 1, jhi, l_nb
+                  ihi = min(ii + l_nb - 1, n)
                   do j = jj, jhi
                      do i = ii, min(ihi, j - 1)
                         A(j, i) = sgn*A(i, j)
@@ -937,10 +944,10 @@ contains
             !$omp end parallel do
             !$omp parallel do private(ii, jhi, ihi, i, j) &
             !$omp             schedule(dynamic) if(n >= unpack_par_min)
-            do jj = 1, n, nb
-               jhi = min(jj + nb - 1, n)
-               do ii = jj, n, nb
-                  ihi = min(ii + nb - 1, n)
+            do jj = 1, n, l_nb
+               jhi = min(jj + l_nb - 1, n)
+               do ii = jj, n, l_nb
+                  ihi = min(ii + l_nb - 1, n)
                   do j = jj, jhi
                      do i = max(ii, j + 1), ihi
                         A(j, i) = sgn*A(i, j)
@@ -997,12 +1004,19 @@ contains
       real(dp), intent(in) :: AP(*)
       real(dp), intent(out) :: A(lda, *)
       character(len=1), intent(in) :: mode, uplo
-      integer(default_int), intent(in) :: nb
+      integer(default_int), intent(in), optional :: nb
       logical :: upper, anti
-      integer(default_int) :: ii, jj, ihi, jhi, i, j, ij, base
+      integer(default_int) :: l_nb, ii, jj, ihi, jhi, i, j, ij, base
       real(dp) :: v, sgn
 
       if (n <= 0) return
+
+      !  Optional so a caller does not have to carry this library's tuning
+      !  constant around. The present() check is a couple of ns against the
+      !  5 ns of array descriptor this entry point exists to avoid, so it
+      !  does not give back what _x is for.
+      l_nb = unpack_nb
+      if (present(nb)) l_nb = nb
 
       upper = (uplo == "U" .or. uplo == "u")
       anti = (mode == "A" .or. mode == "a")
@@ -1137,10 +1151,10 @@ contains
             !$omp end parallel do
             !$omp parallel do private(ii, jhi, ihi, i, j) &
             !$omp             schedule(dynamic) if(n >= unpack_par_min)
-            do jj = 1, n, nb
-               jhi = min(jj + nb - 1, n)
-               do ii = 1, jhi, nb
-                  ihi = min(ii + nb - 1, n)
+            do jj = 1, n, l_nb
+               jhi = min(jj + l_nb - 1, n)
+               do ii = 1, jhi, l_nb
+                  ihi = min(ii + l_nb - 1, n)
                   do j = jj, jhi
                      do i = ii, min(ihi, j - 1)
                         A(j, i) = sgn*A(i, j)
@@ -1161,10 +1175,10 @@ contains
             !$omp end parallel do
             !$omp parallel do private(ii, jhi, ihi, i, j) &
             !$omp             schedule(dynamic) if(n >= unpack_par_min)
-            do jj = 1, n, nb
-               jhi = min(jj + nb - 1, n)
-               do ii = jj, n, nb
-                  ihi = min(ii + nb - 1, n)
+            do jj = 1, n, l_nb
+               jhi = min(jj + l_nb - 1, n)
+               do ii = jj, n, l_nb
+                  ihi = min(ii + l_nb - 1, n)
                   do j = jj, jhi
                      do i = max(ii, j + 1), ihi
                         A(j, i) = sgn*A(i, j)
