@@ -28,9 +28,15 @@ contains
       integer(default_int) :: info
 
       ! Symmetric 3x3 matrix (stored in upper triangle)
-      A(1, 1) = 2.0_sp; A(1, 2) = 1.0_sp; A(1, 3) = 0.0_sp
-      A(2, 1) = 1.0_sp; A(2, 2) = 2.0_sp; A(2, 3) = 1.0_sp
-      A(3, 1) = 0.0_sp; A(3, 2) = 1.0_sp; A(3, 3) = 2.0_sp
+      A(1, 1) = 2.0_sp
+      A(1, 2) = 1.0_sp
+      A(1, 3) = 0.0_sp
+      A(2, 1) = 1.0_sp
+      A(2, 2) = 2.0_sp
+      A(2, 3) = 1.0_sp
+      A(3, 1) = 0.0_sp
+      A(3, 2) = 1.0_sp
+      A(3, 3) = 2.0_sp
 
       call pic_syevd(A, W, info=info)
 
@@ -53,9 +59,15 @@ contains
       integer(default_int) :: info
 
       ! Symmetric 3x3 matrix
-      A(1, 1) = 2.0_dp; A(1, 2) = 1.0_dp; A(1, 3) = 0.0_dp
-      A(2, 1) = 1.0_dp; A(2, 2) = 2.0_dp; A(2, 3) = 1.0_dp
-      A(3, 1) = 0.0_dp; A(3, 2) = 1.0_dp; A(3, 3) = 2.0_dp
+      A(1, 1) = 2.0_dp
+      A(1, 2) = 1.0_dp
+      A(1, 3) = 0.0_dp
+      A(2, 1) = 1.0_dp
+      A(2, 2) = 2.0_dp
+      A(2, 3) = 1.0_dp
+      A(3, 1) = 0.0_dp
+      A(3, 2) = 1.0_dp
+      A(3, 3) = 2.0_dp
 
       call pic_syevd(A, W, info=info)
 
@@ -78,10 +90,12 @@ contains
       integer(default_int) :: info
 
       ! Simple 2x2 symmetric matrix
-      A(1, 1) = 3.0_dp; A(1, 2) = 1.0_dp
-      A(2, 1) = 1.0_dp; A(2, 2) = 3.0_dp
+      A(1, 1) = 3.0_dp
+      A(1, 2) = 1.0_dp
+      A(2, 1) = 1.0_dp
+      A(2, 2) = 3.0_dp
 
-      call pic_syevd(A, W, jobz='N', info=info)
+      call pic_syevd(A, W, jobz="N", info=info)
 
       call check(error, info == 0)
       if (allocated(error)) return

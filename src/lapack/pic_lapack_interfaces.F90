@@ -179,9 +179,9 @@ contains
       real(sp) :: work_query(1)
 
       ! Set defaults
-      l_jobz = 'V'
+      l_jobz = "V"
       if (present(jobz)) l_jobz = jobz
-      l_uplo = 'U'
+      l_uplo = "U"
       if (present(uplo)) l_uplo = uplo
 
       ! Get dimensions
@@ -214,9 +214,9 @@ contains
       real(dp) :: work_query(1)
 
       ! Set defaults
-      l_jobz = 'V'
+      l_jobz = "V"
       if (present(jobz)) l_jobz = jobz
-      l_uplo = 'U'
+      l_uplo = "U"
       if (present(uplo)) l_uplo = uplo
 
       ! Get dimensions
@@ -255,9 +255,9 @@ contains
       integer(default_int) :: iwork_query(1)
 
       ! Set defaults
-      l_jobz = 'V'
+      l_jobz = "V"
       if (present(jobz)) l_jobz = jobz
-      l_uplo = 'U'
+      l_uplo = "U"
       if (present(uplo)) l_uplo = uplo
 
       ! Get dimensions
@@ -294,9 +294,9 @@ contains
       integer(default_int) :: iwork_query(1)
 
       ! Set defaults
-      l_jobz = 'V'
+      l_jobz = "V"
       if (present(jobz)) l_jobz = jobz
-      l_uplo = 'U'
+      l_uplo = "U"
       if (present(uplo)) l_uplo = uplo
 
       ! Get dimensions
@@ -345,17 +345,17 @@ contains
       if (present(jobu)) then
          l_jobu = jobu
       else if (present(U)) then
-         l_jobu = 'S'  ! Compute first min(m,n) columns of U
+         l_jobu = "S"  ! Compute first min(m,n) columns of U
       else
-         l_jobu = 'N'  ! Don't compute U
+         l_jobu = "N"  ! Don't compute U
       end if
 
       if (present(jobvt)) then
          l_jobvt = jobvt
       else if (present(VT)) then
-         l_jobvt = 'S'  ! Compute first min(m,n) rows of VT
+         l_jobvt = "S"  ! Compute first min(m,n) rows of VT
       else
-         l_jobvt = 'N'  ! Don't compute VT
+         l_jobvt = "N"  ! Don't compute VT
       end if
 
       ! Set up U workspace
@@ -434,17 +434,17 @@ contains
       if (present(jobu)) then
          l_jobu = jobu
       else if (present(U)) then
-         l_jobu = 'S'  ! Compute first min(m,n) columns of U
+         l_jobu = "S"  ! Compute first min(m,n) columns of U
       else
-         l_jobu = 'N'  ! Don't compute U
+         l_jobu = "N"  ! Don't compute U
       end if
 
       if (present(jobvt)) then
          l_jobvt = jobvt
       else if (present(VT)) then
-         l_jobvt = 'S'  ! Compute first min(m,n) rows of VT
+         l_jobvt = "S"  ! Compute first min(m,n) rows of VT
       else
-         l_jobvt = 'N'  ! Don't compute VT
+         l_jobvt = "N"  ! Don't compute VT
       end if
 
       ! Set up U workspace

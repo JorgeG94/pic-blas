@@ -29,8 +29,10 @@ contains
       integer(default_int) :: info
 
       ! Simple 2x2 matrix
-      A(1, 1) = 3.0_sp; A(1, 2) = 0.0_sp
-      A(2, 1) = 0.0_sp; A(2, 2) = 4.0_sp
+      A(1, 1) = 3.0_sp
+      A(1, 2) = 0.0_sp
+      A(2, 1) = 0.0_sp
+      A(2, 2) = 4.0_sp
 
       call pic_gesvd(A, S, info=info)
 
@@ -51,8 +53,10 @@ contains
       integer(default_int) :: info
 
       ! Simple 2x2 diagonal matrix
-      A(1, 1) = 3.0_dp; A(1, 2) = 0.0_dp
-      A(2, 1) = 0.0_dp; A(2, 2) = 4.0_dp
+      A(1, 1) = 3.0_dp
+      A(1, 2) = 0.0_dp
+      A(2, 1) = 0.0_dp
+      A(2, 2) = 4.0_dp
 
       call pic_gesvd(A, S, info=info)
 
@@ -99,9 +103,12 @@ contains
       integer(default_int) :: info
 
       ! Rectangular 3x2 matrix (column of 1s and column of 0s)
-      A(1, 1) = 1.0_dp; A(1, 2) = 0.0_dp
-      A(2, 1) = 1.0_dp; A(2, 2) = 0.0_dp
-      A(3, 1) = 1.0_dp; A(3, 2) = 0.0_dp
+      A(1, 1) = 1.0_dp
+      A(1, 2) = 0.0_dp
+      A(2, 1) = 1.0_dp
+      A(2, 2) = 0.0_dp
+      A(3, 1) = 1.0_dp
+      A(3, 2) = 0.0_dp
 
       call pic_gesvd(A, S, info=info)
 
@@ -147,8 +154,10 @@ contains
       integer(default_int) :: info
 
       ! Test matrix
-      A(1, 1) = 1.0_dp; A(1, 2) = 2.0_dp
-      A(2, 1) = 3.0_dp; A(2, 2) = 4.0_dp
+      A(1, 1) = 1.0_dp
+      A(1, 2) = 2.0_dp
+      A(2, 1) = 3.0_dp
+      A(2, 2) = 4.0_dp
       A_orig = A
 
       call pic_gesvd(A, S, U, VT, info=info)
