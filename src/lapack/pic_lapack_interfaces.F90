@@ -220,7 +220,6 @@ module pic_lapack_interfaces
       module procedure :: pic_dgecon
    end interface pic_gecon
 
-
    interface lapack_getrf
       !! Explicit interface for LAPACK GETRF routines
       subroutine sgetrf(m, n, a, lda, ipiv, info)
