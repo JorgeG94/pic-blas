@@ -25,7 +25,9 @@ module pic_blas_interfaces
    ! this _needs_ allocatable arrays since we deduce shapes from the arrays themselves
    public :: pic_gemm, pic_gemv, pic_asum, pic_axpy, pic_copy, pic_dot, pic_scal, pic_iamax
    public :: pic_symm, pic_syrk, pic_syr2k
-   public :: pic_gemm_x
+   public :: pic_gemm_x, pic_gemv_x, pic_ger, pic_ger_x
+   public :: pic_sgemv_x, pic_dgemv_x, pic_sger_x, pic_dger_x
+   public :: pic_sgemm_x, pic_dgemm_x
 
    ! tested
    interface pic_gemm
@@ -496,6 +498,77 @@ module pic_blas_interfaces
       module procedure :: pic_sgemm_x
       module procedure :: pic_dgemm_x
    end interface pic_gemm_x
+
+   interface pic_gemv_x
+      !! GEMV with explicit dimensions, in the shape the BLAS itself uses
+      !!
+      !! Usage: call pic_gemv_x(trans, m, n, alpha, A, lda, x, incx, &
+      !!                        beta, y, incy)
+      !!
+      !! Same reasoning as pic_gemm_x: pic_gemv takes the matrix as
+      !! assumed-shape and so needs a section when the caller holds a block
+      !! inside a larger array, and a section whose leading dimension exceeds
+      !! its row count is packed into a temporary before the call. Legacy
+      !! callers pass a leading dimension separately as a matter of course --
+      !! in GAMESS's mthlib, all seven GEMV calls do.
+      !!
+      !! This also takes incx and incy, so a row of a matrix can be passed
+      !! directly rather than through a strided section.
+      !!
+      !! Calling convention, and it is a trap: legacy code names a submatrix by
+      !! its first element -- A(1,j) meaning "from column j on, with leading
+      !! dimension lda". Sequence association allows that, but only for a
+      !! specific procedure. Generic resolution matches on rank and rejects a
+      !! scalar actual argument for an array dummy, so a call through this
+      !! generic fails to compile with "no specific subroutine". Call
+      !! pic_dgemv_x or pic_sgemv_x by name from that style of caller; the
+      !! generic is for whole arrays and rank-2 sections. Both specific names
+      !! are public for exactly this reason.
+      module procedure :: pic_sgemv_x
+      module procedure :: pic_dgemv_x
+   end interface pic_gemv_x
+
+   interface pic_ger
+      !! rank-one update: A := alpha*x*y**T + A
+      !!
+      !! Usage: call pic_ger(A, x, y, [alpha])
+      !!
+      !! The natural partner to GEMV, and what turns a Gram-Schmidt written
+      !! as a loop of AXPYs into two calls over the whole trailing block.
+      module procedure :: pic_sger
+      module procedure :: pic_dger
+   end interface pic_ger
+
+   interface pic_ger_x
+      !! rank-one update with explicit dimensions
+      !!
+      !! Usage: call pic_ger_x(m, n, alpha, x, incx, y, incy, A, lda)
+      module procedure :: pic_sger_x
+      module procedure :: pic_dger_x
+   end interface pic_ger_x
+
+
+   interface blas_ger
+      !! not a public interface, used internally by pic_ger
+      pure subroutine sger(m, n, alpha, x, incx, y, incy, a, lda)
+         import :: sp, default_int
+         implicit none
+         integer(default_int), intent(in) :: m, n, incx, incy, lda
+         real(sp), intent(in) :: alpha
+         real(sp), intent(in) :: x(*)
+         real(sp), intent(in) :: y(*)
+         real(sp), intent(inout) :: a(lda, *)
+      end subroutine sger
+      pure subroutine dger(m, n, alpha, x, incx, y, incy, a, lda)
+         import :: dp, default_int
+         implicit none
+         integer(default_int), intent(in) :: m, n, incx, incy, lda
+         real(dp), intent(in) :: alpha
+         real(dp), intent(in) :: x(*)
+         real(dp), intent(in) :: y(*)
+         real(dp), intent(inout) :: a(lda, *)
+      end subroutine dger
+   end interface blas_ger
 
    interface blas_gemm
       !! explicit interface for BLAS GEMM routines
@@ -1336,5 +1409,85 @@ contains
 
       call blas_gemm(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc)
    end subroutine pic_dgemm_x
+
+   pure subroutine pic_sgemv_x(trans, m, n, alpha, A, lda, x, incx, beta, y, incy)
+      !! GEMV with explicit dimensions; forwards to the BLAS unchanged
+      character(len=1), intent(in) :: trans
+      integer(default_int), intent(in) :: m, n, lda, incx, incy
+      real(sp), intent(in) :: alpha, beta
+      real(sp), intent(in) :: A(lda, *)
+      real(sp), intent(in) :: x(*)
+      real(sp), intent(inout) :: y(*)
+
+      call blas_gemv(trans, m, n, alpha, A, lda, x, incx, beta, y, incy)
+   end subroutine pic_sgemv_x
+
+   pure subroutine pic_sger_x(m, n, alpha, x, incx, y, incy, A, lda)
+      !! rank-one update with explicit dimensions; forwards unchanged
+      integer(default_int), intent(in) :: m, n, incx, incy, lda
+      real(sp), intent(in) :: alpha
+      real(sp), intent(in) :: x(*)
+      real(sp), intent(in) :: y(*)
+      real(sp), intent(inout) :: A(lda, *)
+
+      call blas_ger(m, n, alpha, x, incx, y, incy, A, lda)
+   end subroutine pic_sger_x
+
+   pure subroutine pic_sger(A, x, y, alpha)
+      !! rank-one update, dimensions taken from the arguments
+      real(sp), intent(inout) :: A(:, :)
+      real(sp), intent(in) :: x(:)
+      real(sp), intent(in) :: y(:)
+      real(sp), intent(in), optional :: alpha
+      real(sp) :: l_alpha
+      integer(default_int) :: m, n, lda
+
+      l_alpha = 1.0_sp
+      if (present(alpha)) l_alpha = alpha
+      m = size(A, 1, kind=default_int)
+      n = size(A, 2, kind=default_int)
+      lda = max(1_default_int, m)
+      call blas_ger(m, n, l_alpha, x, 1_default_int, y, 1_default_int, A, lda)
+   end subroutine pic_sger
+
+   pure subroutine pic_dgemv_x(trans, m, n, alpha, A, lda, x, incx, beta, y, incy)
+      !! GEMV with explicit dimensions; forwards to the BLAS unchanged
+      character(len=1), intent(in) :: trans
+      integer(default_int), intent(in) :: m, n, lda, incx, incy
+      real(dp), intent(in) :: alpha, beta
+      real(dp), intent(in) :: A(lda, *)
+      real(dp), intent(in) :: x(*)
+      real(dp), intent(inout) :: y(*)
+
+      call blas_gemv(trans, m, n, alpha, A, lda, x, incx, beta, y, incy)
+   end subroutine pic_dgemv_x
+
+   pure subroutine pic_dger_x(m, n, alpha, x, incx, y, incy, A, lda)
+      !! rank-one update with explicit dimensions; forwards unchanged
+      integer(default_int), intent(in) :: m, n, incx, incy, lda
+      real(dp), intent(in) :: alpha
+      real(dp), intent(in) :: x(*)
+      real(dp), intent(in) :: y(*)
+      real(dp), intent(inout) :: A(lda, *)
+
+      call blas_ger(m, n, alpha, x, incx, y, incy, A, lda)
+   end subroutine pic_dger_x
+
+   pure subroutine pic_dger(A, x, y, alpha)
+      !! rank-one update, dimensions taken from the arguments
+      real(dp), intent(inout) :: A(:, :)
+      real(dp), intent(in) :: x(:)
+      real(dp), intent(in) :: y(:)
+      real(dp), intent(in), optional :: alpha
+      real(dp) :: l_alpha
+      integer(default_int) :: m, n, lda
+
+      l_alpha = 1.0_dp
+      if (present(alpha)) l_alpha = alpha
+      m = size(A, 1, kind=default_int)
+      n = size(A, 2, kind=default_int)
+      lda = max(1_default_int, m)
+      call blas_ger(m, n, l_alpha, x, 1_default_int, y, 1_default_int, A, lda)
+   end subroutine pic_dger
 
 end module pic_blas_interfaces
