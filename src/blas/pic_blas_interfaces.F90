@@ -25,6 +25,7 @@ module pic_blas_interfaces
    ! this _needs_ allocatable arrays since we deduce shapes from the arrays themselves
    public :: pic_gemm, pic_gemv, pic_asum, pic_axpy, pic_copy, pic_dot, pic_scal, pic_iamax
    public :: pic_symm, pic_syrk, pic_syr2k
+   public :: pic_gemm_x
 
    ! tested
    interface pic_gemm
@@ -465,6 +466,36 @@ module pic_blas_interfaces
          complex(dp), intent(in) :: beta
       end subroutine zgemv
    end interface blas_gemv
+
+   interface pic_gemm_x
+      !! GEMM with explicit dimensions, in the shape the BLAS itself uses
+      !!
+      !! Usage: call pic_gemm_x(transa, transb, m, n, k, alpha, A, lda, &
+      !!                        B, ldb, beta, C, ldc)
+      !!
+      !! pic_gemm derives m, n, k and the leading dimensions from the shapes
+      !! of its arguments, which is the pleasant way to call it and is right
+      !! whenever the arrays are exactly the matrices being multiplied. It is
+      !! the wrong way when they are not.
+      !!
+      !! A caller holding a block inside a larger array has to pass a section.
+      !! If the leading dimension exceeds the number of rows that section is
+      !! strided, and handing it to an explicit-shape dummy means the compiler
+      !! packs a temporary -- for C, which is read and written, on the way in
+      !! and again on the way out. Measured against calling DGEMM directly,
+      !! with the leading dimension larger than the block, that costs:
+      !!
+      !!     16x16x16    1.59x        256x256x256   1.72x
+      !!     32x32x32    1.40x        512x512x512   1.48x
+      !!     64x64x64    1.20x        100x20x400    1.35x
+      !!
+      !! It does not wash out with size, because the packing grows with the
+      !! matrices too. This entry forwards straight to the BLAS and adds
+      !! nothing. Reach for it when the arrays are bigger than the multiply;
+      !! reach for pic_gemm otherwise.
+      module procedure :: pic_sgemm_x
+      module procedure :: pic_dgemm_x
+   end interface pic_gemm_x
 
    interface blas_gemm
       !! explicit interface for BLAS GEMM routines
@@ -1282,4 +1313,28 @@ contains
       incx = 1
       idx = blas_iamax(n, x, incx)
    end function pic_idamax
+   pure subroutine pic_sgemm_x(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc)
+      !! GEMM with explicit dimensions; forwards to the BLAS unchanged
+      character(len=1), intent(in) :: transa, transb
+      integer(default_int), intent(in) :: m, n, k, lda, ldb, ldc
+      real(sp), intent(in) :: alpha, beta
+      real(sp), intent(in) :: A(lda, *)
+      real(sp), intent(in) :: B(ldb, *)
+      real(sp), intent(inout) :: C(ldc, *)
+
+      call blas_gemm(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc)
+   end subroutine pic_sgemm_x
+
+   pure subroutine pic_dgemm_x(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc)
+      !! GEMM with explicit dimensions; forwards to the BLAS unchanged
+      character(len=1), intent(in) :: transa, transb
+      integer(default_int), intent(in) :: m, n, k, lda, ldb, ldc
+      real(dp), intent(in) :: alpha, beta
+      real(dp), intent(in) :: A(lda, *)
+      real(dp), intent(in) :: B(ldb, *)
+      real(dp), intent(inout) :: C(ldc, *)
+
+      call blas_gemm(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc)
+   end subroutine pic_dgemm_x
+
 end module pic_blas_interfaces

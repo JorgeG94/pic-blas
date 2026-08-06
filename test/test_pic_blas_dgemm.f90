@@ -1,6 +1,6 @@
 module test_pic_blas_interfaces_dgemm
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use pic_blas_interfaces, only: pic_gemm
+   use pic_blas_interfaces, only: pic_gemm, pic_gemm_x
    use pic_types, only: sp, dp, default_int
    implicit none
    private
@@ -13,6 +13,8 @@ contains
 
       testsuite = [ &
                   new_unittest("test_dgemm_basic", test_dgemm_basic), &
+                  new_unittest("gemm_x_matches_gemm_on_a_subblock", test_gemm_x_subblock), &
+                  new_unittest("gemm_x_transposes_and_scalars", test_gemm_x_trans), &
                   new_unittest("test_dgemm_transpose_a", test_dgemm_transpose_a), &
                   new_unittest("test_dgemm_transpose_b", test_dgemm_transpose_b), &
                   new_unittest("test_dgemm_transpose_both", test_dgemm_transpose_both), &
@@ -174,5 +176,107 @@ contains
       call check(error, all(abs(C - expected) < tol))
       if (allocated(error)) return
    end subroutine test_dgemm_beta_accumulate
+
+
+   !  The point of the explicit-dimension entry: a block living inside a
+   !  larger array, where the leading dimension is bigger than the number of
+   !  rows. pic_gemm would need a section here, and a section of a strided
+   !  array gets packed. pic_gemm_x is handed the dimensions instead, and has
+   !  to produce exactly the same numbers.
+   subroutine test_gemm_x_subblock(error)
+      type(error_type), allocatable, intent(out) :: error
+      integer(default_int), parameter :: ld = 11, m = 4, n = 3, k = 5
+      real(dp) :: A(ld, k), B(ld, n), C(ld, n)
+      real(dp) :: As(m, k), Bs(k, n), Cs(m, n)
+      integer(default_int) :: i, j
+
+      !  fill the whole arrays, including the padding rows, with values that
+      !  would change the answer if they were read
+      do j = 1, k
+         do i = 1, ld
+            A(i, j) = real(i*3 + j*7, dp)
+         end do
+      end do
+      do j = 1, n
+         do i = 1, ld
+            B(i, j) = real(i*5 - j*2, dp)
+            C(i, j) = -1000.0_dp
+         end do
+      end do
+      do j = 1, k
+         do i = 1, m
+            As(i, j) = A(i, j)
+         end do
+      end do
+      do j = 1, n
+         do i = 1, k
+            Bs(i, j) = B(i, j)
+         end do
+      end do
+      Cs = 0.0_dp
+
+      call pic_gemm(As, Bs, Cs)
+      call pic_gemm_x("N", "N", m, n, k, 1.0_dp, A, ld, B, ld, 0.0_dp, C, ld)
+
+      do j = 1, n
+         do i = 1, m
+            call check(error, abs(C(i, j) - Cs(i, j)) < 1.0e-12_dp)
+            if (allocated(error)) return
+         end do
+      end do
+      !  and the padding must be untouched
+      do j = 1, n
+         do i = m + 1, ld
+            call check(error, C(i, j) == -1000.0_dp)
+            if (allocated(error)) return
+         end do
+      end do
+   end subroutine test_gemm_x_subblock
+
+   subroutine test_gemm_x_trans(error)
+      type(error_type), allocatable, intent(out) :: error
+      integer(default_int), parameter :: ld = 9, m = 3, n = 4, k = 2
+      real(dp) :: At(ld, m), B(ld, n), C(ld, n), Cref(ld, n)
+      real(dp) :: Ats(k, m), Bs(k, n), Cs(m, n)
+      integer(default_int) :: i, j
+
+      do j = 1, m
+         do i = 1, ld
+            At(i, j) = real(i + 2*j, dp)
+         end do
+      end do
+      do j = 1, n
+         do i = 1, ld
+            B(i, j) = real(3*i - j, dp)
+            C(i, j) = real(i - j, dp)
+         end do
+      end do
+      Cref = C
+      do j = 1, m
+         do i = 1, k
+            Ats(i, j) = At(i, j)
+         end do
+      end do
+      do j = 1, n
+         do i = 1, k
+            Bs(i, j) = B(i, j)
+         end do
+      end do
+      do j = 1, n
+         do i = 1, m
+            Cs(i, j) = Cref(i, j)
+         end do
+      end do
+
+      call pic_gemm(Ats, Bs, Cs, "T", "N", 2.0_dp, 3.0_dp)
+      call pic_gemm_x("T", "N", m, n, k, 2.0_dp, At, ld, B, ld, 3.0_dp, C, ld)
+
+      do j = 1, n
+         do i = 1, m
+            call check(error, abs(C(i, j) - Cs(i, j)) < 1.0e-12_dp)
+            if (allocated(error)) return
+         end do
+      end do
+   end subroutine test_gemm_x_trans
 
 end module test_pic_blas_interfaces_dgemm
