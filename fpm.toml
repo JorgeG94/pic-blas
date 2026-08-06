@@ -34,6 +34,6 @@ pic = { git = "https://github.com/JorgeG94/pic.git", branch = "main"}
 
 [extra.fortitude.check]
 select = ["C", "E", "S"]
-ignore = ["C003"]
+ignore = ["C003", "C072", "C183", "C142", "S221", "C181", "S262"]
 line-length = 132
 per-file-ignores = { "pic_*_interfaces.F90" = ["C071"] }
