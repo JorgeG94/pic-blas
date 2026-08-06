@@ -60,6 +60,7 @@ module pic_lapack_interfaces
    ! Public overloaded interfaces
    public :: pic_syev, pic_syevd, pic_gesvd
    public :: pic_tpttr, pic_trttp, pic_unpack, pic_unpack_x
+   public :: pic_getrf, pic_getrs, pic_getri, pic_gecon
 
    interface pic_syev
       !! General interface for LAPACK SYEV routines (symmetric eigenvalue problem)
@@ -168,6 +169,151 @@ module pic_lapack_interfaces
       module procedure :: pic_sunpack_x
       module procedure :: pic_dunpack_x
    end interface pic_unpack_x
+
+   interface pic_getrf
+      !! LU factorisation with partial pivoting: A = P*L*U
+      !!
+      !! Usage: call pic_getrf(A, ipiv, [info])
+      !!
+      !! A is overwritten by L and U; the unit diagonal of L is not stored.
+      !! ipiv(i) is the row interchanged with row i.
+      !!
+      !! Note for anyone replacing LINPACK's DGEFA with this: DGEFA stores the
+      !! *negated* multipliers in L, because it forms -1/pivot and scales.
+      !! LAPACK stores them unnegated. The factorisations are otherwise the
+      !! same and U is identical, but any routine that reads the factored
+      !! array -- a solve, an inverse, a determinant -- has to be moved at the
+      !! same time or it will read L with the wrong sign and fail silently.
+      module procedure :: pic_sgetrf
+      module procedure :: pic_dgetrf
+   end interface pic_getrf
+
+   interface pic_getrs
+      !! solve A*X = B or A**T*X = B from the factors pic_getrf produced
+      !!
+      !! Usage: call pic_getrs(A, ipiv, B, [trans], [info])
+      module procedure :: pic_sgetrs
+      module procedure :: pic_dgetrs
+   end interface pic_getrs
+
+   interface pic_getri
+      !! invert a matrix from the factors pic_getrf produced, in place
+      !!
+      !! Usage: call pic_getri(A, ipiv, [info])
+      !!
+      !! There is no LAPACK determinant routine. The determinant is the
+      !! product of U's diagonal times the sign of the pivot permutation, and
+      !! U is the same whichever way L was signed, so a caller computing it
+      !! from the factored array needs no change.
+      module procedure :: pic_sgetri
+      module procedure :: pic_dgetri
+   end interface pic_getri
+
+   interface pic_gecon
+      !! estimate the reciprocal condition number from pic_getrf's factors
+      !!
+      !! Usage: call pic_gecon(A, anorm, rcond, [norm], [info])
+      !!
+      !! anorm must be the norm of the *original* matrix, in the same norm as
+      !! the -norm- argument, taken before it was factorised.
+      module procedure :: pic_sgecon
+      module procedure :: pic_dgecon
+   end interface pic_gecon
+
+
+   interface lapack_getrf
+      !! Explicit interface for LAPACK GETRF routines
+      subroutine sgetrf(m, n, a, lda, ipiv, info)
+         import :: sp, default_int
+         implicit none
+         integer(default_int), intent(in) :: m, n, lda
+         real(sp), intent(inout) :: a(lda, *)
+         integer(default_int), intent(out) :: ipiv(*)
+         integer(default_int), intent(out) :: info
+      end subroutine sgetrf
+      subroutine dgetrf(m, n, a, lda, ipiv, info)
+         import :: dp, default_int
+         implicit none
+         integer(default_int), intent(in) :: m, n, lda
+         real(dp), intent(inout) :: a(lda, *)
+         integer(default_int), intent(out) :: ipiv(*)
+         integer(default_int), intent(out) :: info
+      end subroutine dgetrf
+   end interface lapack_getrf
+
+   interface lapack_getrs
+      !! Explicit interface for LAPACK GETRS routines
+      subroutine sgetrs(trans, n, nrhs, a, lda, ipiv, b, ldb, info)
+         import :: sp, default_int
+         implicit none
+         character(len=1), intent(in) :: trans
+         integer(default_int), intent(in) :: n, nrhs, lda, ldb
+         real(sp), intent(in) :: a(lda, *)
+         integer(default_int), intent(in) :: ipiv(*)
+         real(sp), intent(inout) :: b(ldb, *)
+         integer(default_int), intent(out) :: info
+      end subroutine sgetrs
+      subroutine dgetrs(trans, n, nrhs, a, lda, ipiv, b, ldb, info)
+         import :: dp, default_int
+         implicit none
+         character(len=1), intent(in) :: trans
+         integer(default_int), intent(in) :: n, nrhs, lda, ldb
+         real(dp), intent(in) :: a(lda, *)
+         integer(default_int), intent(in) :: ipiv(*)
+         real(dp), intent(inout) :: b(ldb, *)
+         integer(default_int), intent(out) :: info
+      end subroutine dgetrs
+   end interface lapack_getrs
+
+   interface lapack_getri
+      !! Explicit interface for LAPACK GETRI routines
+      subroutine sgetri(n, a, lda, ipiv, work, lwork, info)
+         import :: sp, default_int
+         implicit none
+         integer(default_int), intent(in) :: n, lda, lwork
+         real(sp), intent(inout) :: a(lda, *)
+         integer(default_int), intent(in) :: ipiv(*)
+         real(sp), intent(out) :: work(*)
+         integer(default_int), intent(out) :: info
+      end subroutine sgetri
+      subroutine dgetri(n, a, lda, ipiv, work, lwork, info)
+         import :: dp, default_int
+         implicit none
+         integer(default_int), intent(in) :: n, lda, lwork
+         real(dp), intent(inout) :: a(lda, *)
+         integer(default_int), intent(in) :: ipiv(*)
+         real(dp), intent(out) :: work(*)
+         integer(default_int), intent(out) :: info
+      end subroutine dgetri
+   end interface lapack_getri
+
+   interface lapack_gecon
+      !! Explicit interface for LAPACK GECON routines
+      subroutine sgecon(norm, n, a, lda, anorm, rcond, work, iwork, info)
+         import :: sp, default_int
+         implicit none
+         character(len=1), intent(in) :: norm
+         integer(default_int), intent(in) :: n, lda
+         real(sp), intent(in) :: a(lda, *)
+         real(sp), intent(in) :: anorm
+         real(sp), intent(out) :: rcond
+         real(sp), intent(out) :: work(*)
+         integer(default_int), intent(out) :: iwork(*)
+         integer(default_int), intent(out) :: info
+      end subroutine sgecon
+      subroutine dgecon(norm, n, a, lda, anorm, rcond, work, iwork, info)
+         import :: dp, default_int
+         implicit none
+         character(len=1), intent(in) :: norm
+         integer(default_int), intent(in) :: n, lda
+         real(dp), intent(in) :: a(lda, *)
+         real(dp), intent(in) :: anorm
+         real(dp), intent(out) :: rcond
+         real(dp), intent(out) :: work(*)
+         integer(default_int), intent(out) :: iwork(*)
+         integer(default_int), intent(out) :: info
+      end subroutine dgecon
+   end interface lapack_gecon
 
    ! Low-level LAPACK interfaces (not public)
    interface lapack_syev
@@ -1219,5 +1365,171 @@ contains
                          size(A, 1, kind=default_int), l_mode, l_uplo, l_nb)
 
    end subroutine pic_dunpack
+
+   subroutine pic_sgetrf(A, ipiv, info)
+      !! LU factorisation with partial pivoting
+      real(sp), intent(inout) :: A(:, :)
+      integer(default_int), intent(out) :: ipiv(:)
+      integer(default_int), intent(out), optional :: info
+      integer(default_int) :: m, n, lda, l_info
+
+      m = size(A, 1, kind=default_int)
+      n = size(A, 2, kind=default_int)
+      lda = max(1_default_int, m)
+      call lapack_getrf(m, n, A, lda, ipiv, l_info)
+      if (present(info)) info = l_info
+   end subroutine pic_sgetrf
+
+   subroutine pic_sgetrs(A, ipiv, B, trans, info)
+      !! solve using the factors from pic_getrf
+      real(sp), intent(in) :: A(:, :)
+      integer(default_int), intent(in) :: ipiv(:)
+      real(sp), intent(inout) :: B(:, :)
+      character(len=1), intent(in), optional :: trans
+      integer(default_int), intent(out), optional :: info
+      character(len=1) :: l_trans
+      integer(default_int) :: n, nrhs, lda, ldb, l_info
+
+      l_trans = "N"
+      if (present(trans)) l_trans = trans
+      n = size(A, 2, kind=default_int)
+      nrhs = size(B, 2, kind=default_int)
+      lda = max(1_default_int, size(A, 1, kind=default_int))
+      ldb = max(1_default_int, size(B, 1, kind=default_int))
+      call lapack_getrs(l_trans, n, nrhs, A, lda, ipiv, B, ldb, l_info)
+      if (present(info)) info = l_info
+   end subroutine pic_sgetrs
+
+   subroutine pic_sgetri(A, ipiv, info)
+      !! invert in place using the factors from pic_getrf
+      real(sp), intent(inout) :: A(:, :)
+      integer(default_int), intent(in) :: ipiv(:)
+      integer(default_int), intent(out), optional :: info
+      integer(default_int) :: n, lda, lwork, l_info
+      real(sp), allocatable :: work(:)
+      real(sp) :: work_query(1)
+
+      n = size(A, 2, kind=default_int)
+      lda = max(1_default_int, size(A, 1, kind=default_int))
+
+      !  Ask LAPACK for the block size rather than guessing one. A fixed
+      !  guess is what makes this kind of wrapper slow on one machine and
+      !  wrong on the next.
+      call lapack_getri(n, A, lda, ipiv, work_query, -1_default_int, l_info)
+      if (l_info /= 0) then
+         if (present(info)) info = l_info
+         return
+      end if
+      lwork = max(1_default_int, int(work_query(1), default_int))
+      allocate (work(lwork))
+      call lapack_getri(n, A, lda, ipiv, work, lwork, l_info)
+      deallocate (work)
+      if (present(info)) info = l_info
+   end subroutine pic_sgetri
+
+   subroutine pic_sgecon(A, anorm, rcond, norm, info)
+      !! reciprocal condition number estimate from pic_getrf's factors
+      real(sp), intent(in) :: A(:, :)
+      real(sp), intent(in) :: anorm
+      real(sp), intent(out) :: rcond
+      character(len=1), intent(in), optional :: norm
+      integer(default_int), intent(out), optional :: info
+      character(len=1) :: l_norm
+      integer(default_int) :: n, lda, l_info
+      real(sp), allocatable :: work(:)
+      integer(default_int), allocatable :: iwork(:)
+
+      l_norm = "1"
+      if (present(norm)) l_norm = norm
+      n = size(A, 2, kind=default_int)
+      lda = max(1_default_int, size(A, 1, kind=default_int))
+      allocate (work(max(1_default_int, 4*n)), iwork(max(1_default_int, n)))
+      call lapack_gecon(l_norm, n, A, lda, anorm, rcond, work, iwork, l_info)
+      deallocate (work, iwork)
+      if (present(info)) info = l_info
+   end subroutine pic_sgecon
+
+   subroutine pic_dgetrf(A, ipiv, info)
+      !! LU factorisation with partial pivoting
+      real(dp), intent(inout) :: A(:, :)
+      integer(default_int), intent(out) :: ipiv(:)
+      integer(default_int), intent(out), optional :: info
+      integer(default_int) :: m, n, lda, l_info
+
+      m = size(A, 1, kind=default_int)
+      n = size(A, 2, kind=default_int)
+      lda = max(1_default_int, m)
+      call lapack_getrf(m, n, A, lda, ipiv, l_info)
+      if (present(info)) info = l_info
+   end subroutine pic_dgetrf
+
+   subroutine pic_dgetrs(A, ipiv, B, trans, info)
+      !! solve using the factors from pic_getrf
+      real(dp), intent(in) :: A(:, :)
+      integer(default_int), intent(in) :: ipiv(:)
+      real(dp), intent(inout) :: B(:, :)
+      character(len=1), intent(in), optional :: trans
+      integer(default_int), intent(out), optional :: info
+      character(len=1) :: l_trans
+      integer(default_int) :: n, nrhs, lda, ldb, l_info
+
+      l_trans = "N"
+      if (present(trans)) l_trans = trans
+      n = size(A, 2, kind=default_int)
+      nrhs = size(B, 2, kind=default_int)
+      lda = max(1_default_int, size(A, 1, kind=default_int))
+      ldb = max(1_default_int, size(B, 1, kind=default_int))
+      call lapack_getrs(l_trans, n, nrhs, A, lda, ipiv, B, ldb, l_info)
+      if (present(info)) info = l_info
+   end subroutine pic_dgetrs
+
+   subroutine pic_dgetri(A, ipiv, info)
+      !! invert in place using the factors from pic_getrf
+      real(dp), intent(inout) :: A(:, :)
+      integer(default_int), intent(in) :: ipiv(:)
+      integer(default_int), intent(out), optional :: info
+      integer(default_int) :: n, lda, lwork, l_info
+      real(dp), allocatable :: work(:)
+      real(dp) :: work_query(1)
+
+      n = size(A, 2, kind=default_int)
+      lda = max(1_default_int, size(A, 1, kind=default_int))
+
+      !  Ask LAPACK for the block size rather than guessing one. A fixed
+      !  guess is what makes this kind of wrapper slow on one machine and
+      !  wrong on the next.
+      call lapack_getri(n, A, lda, ipiv, work_query, -1_default_int, l_info)
+      if (l_info /= 0) then
+         if (present(info)) info = l_info
+         return
+      end if
+      lwork = max(1_default_int, int(work_query(1), default_int))
+      allocate (work(lwork))
+      call lapack_getri(n, A, lda, ipiv, work, lwork, l_info)
+      deallocate (work)
+      if (present(info)) info = l_info
+   end subroutine pic_dgetri
+
+   subroutine pic_dgecon(A, anorm, rcond, norm, info)
+      !! reciprocal condition number estimate from pic_getrf's factors
+      real(dp), intent(in) :: A(:, :)
+      real(dp), intent(in) :: anorm
+      real(dp), intent(out) :: rcond
+      character(len=1), intent(in), optional :: norm
+      integer(default_int), intent(out), optional :: info
+      character(len=1) :: l_norm
+      integer(default_int) :: n, lda, l_info
+      real(dp), allocatable :: work(:)
+      integer(default_int), allocatable :: iwork(:)
+
+      l_norm = "1"
+      if (present(norm)) l_norm = norm
+      n = size(A, 2, kind=default_int)
+      lda = max(1_default_int, size(A, 1, kind=default_int))
+      allocate (work(max(1_default_int, 4*n)), iwork(max(1_default_int, n)))
+      call lapack_gecon(l_norm, n, A, lda, anorm, rcond, work, iwork, l_info)
+      deallocate (work, iwork)
+      if (present(info)) info = l_info
+   end subroutine pic_dgecon
 
 end module pic_lapack_interfaces
