@@ -21,8 +21,27 @@ macro("my_fetch_package" package url)
     GIT_TAG "${_git_ref}")
   FetchContent_MakeAvailable("${_pkg_lc}")
 
-  add_library("${package}::${package}" INTERFACE IMPORTED)
-  target_link_libraries("${package}::${package}" INTERFACE "${package}")
+  # Only invent the namespaced target if the package did not provide one.
+  #
+  # A package that follows the usual convention aliases its own targets, and
+  # then this would fail outright -- add_library cannot create a target that
+  # already exists. Worse, when it did apply it linked the *literal* package
+  # name, which is wrong for any project whose library name varies with its
+  # configuration: pic built with PIC_DEFAULT_INT8 produces libpic_i8.a, so
+  # the bare -lpic here travelled through pic-blas into the consumer's link
+  # and failed there as "cannot find -lpic".
+  if(NOT TARGET "${package}::${package}")
+    add_library("${package}::${package}" INTERFACE IMPORTED)
+    if(TARGET "${package}")
+      target_link_libraries("${package}::${package}" INTERFACE "${package}")
+    else()
+      message(
+        WARNING
+          "${package} provides neither ${package}::${package} nor a target named "
+          "${package}; linking by name, which may not match the library it built.")
+      target_link_libraries("${package}::${package}" INTERFACE "${package}")
+    endif()
+  endif()
 
   if(NOT EXISTS "${${_pkg_lc}_BINARY_DIR}/include")
     file(MAKE_DIRECTORY "${${_pkg_lc}_BINARY_DIR}/include")
