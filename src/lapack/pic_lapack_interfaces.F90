@@ -758,7 +758,6 @@ contains
 
    end subroutine pic_dtrttp
 
-
    subroutine pic_sunpack_x(n, AP, A, lda, mode, uplo, nb)
       !! expand packed triangular storage into a full mirrored matrix,
       !! explicit dimensions
@@ -979,7 +978,7 @@ contains
       if (present(nb)) l_nb = nb
 
       call pic_sunpack_x(size(A, 2, kind=default_int), AP, A, &
-                             size(A, 1, kind=default_int), l_mode, l_uplo, l_nb)
+                         size(A, 1, kind=default_int), l_mode, l_uplo, l_nb)
 
    end subroutine pic_sunpack
 
@@ -1203,7 +1202,7 @@ contains
       if (present(nb)) l_nb = nb
 
       call pic_dunpack_x(size(A, 2, kind=default_int), AP, A, &
-                             size(A, 1, kind=default_int), l_mode, l_uplo, l_nb)
+                         size(A, 1, kind=default_int), l_mode, l_uplo, l_nb)
 
    end subroutine pic_dunpack
 
