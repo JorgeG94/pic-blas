@@ -14,6 +14,7 @@ module pic_lapack_interfaces
 
    ! Public overloaded interfaces
    public :: pic_syev, pic_syevd, pic_gesvd
+   public :: pic_tpttr, pic_trttp
 
    interface pic_syev
       !! General interface for LAPACK SYEV routines (symmetric eigenvalue problem)
@@ -53,6 +54,34 @@ module pic_lapack_interfaces
       module procedure :: pic_sgesvd
       module procedure :: pic_dgesvd
    end interface pic_gesvd
+
+   interface pic_tpttr
+      !! packed triangular storage -> full storage
+      !!
+      !! Usage: call pic_tpttr(AP, A, [uplo], [info])
+      !!
+      !! Note what this does *not* do: it writes only the triangle named by
+      !! uplo, and leaves the rest of A alone. It does not mirror into a full
+      !! symmetric matrix.
+      !!
+      !! That is usually what you want. Code that unpacks a symmetric matrix
+      !! and mirrors it is generally doing so because the next call is a GEMM,
+      !! which needs every element. Reach for pic_symm, pic_syrk or pic_syr2k
+      !! instead and only one triangle is ever read, so the mirror is wasted
+      !! work on top of a multiply that was already doing twice what it needed.
+      module procedure :: pic_stpttr
+      module procedure :: pic_dtpttr
+   end interface pic_tpttr
+
+   interface pic_trttp
+      !! full storage -> packed triangular storage
+      !!
+      !! Usage: call pic_trttp(A, AP, [uplo], [info])
+      !!
+      !! The inverse of pic_tpttr; reads the uplo triangle of A.
+      module procedure :: pic_strttp
+      module procedure :: pic_dtrttp
+   end interface pic_trttp
 
    ! Low-level LAPACK interfaces (not public)
    interface lapack_syev
@@ -158,6 +187,54 @@ module pic_lapack_interfaces
          integer(default_int), intent(out) :: info
       end subroutine dgesvd
    end interface lapack_gesvd
+
+   interface lapack_tpttr
+      !! not a public interface, used internally by pic_tpttr
+      pure subroutine stpttr(uplo, n, ap, a, lda, info)
+         import :: sp, default_int
+         implicit none
+         character(len=1), intent(in) :: uplo
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: lda
+         real(sp), intent(in) :: ap(*)
+         real(sp), intent(inout) :: a(lda, *)
+         integer(default_int), intent(out) :: info
+      end subroutine stpttr
+      pure subroutine dtpttr(uplo, n, ap, a, lda, info)
+         import :: dp, default_int
+         implicit none
+         character(len=1), intent(in) :: uplo
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: lda
+         real(dp), intent(in) :: ap(*)
+         real(dp), intent(inout) :: a(lda, *)
+         integer(default_int), intent(out) :: info
+      end subroutine dtpttr
+   end interface lapack_tpttr
+
+   interface lapack_trttp
+      !! not a public interface, used internally by pic_trttp
+      pure subroutine strttp(uplo, n, a, lda, ap, info)
+         import :: sp, default_int
+         implicit none
+         character(len=1), intent(in) :: uplo
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: lda
+         real(sp), intent(in) :: a(lda, *)
+         real(sp), intent(out) :: ap(*)
+         integer(default_int), intent(out) :: info
+      end subroutine strttp
+      pure subroutine dtrttp(uplo, n, a, lda, ap, info)
+         import :: dp, default_int
+         implicit none
+         character(len=1), intent(in) :: uplo
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: lda
+         real(dp), intent(in) :: a(lda, *)
+         real(dp), intent(out) :: ap(*)
+         integer(default_int), intent(out) :: info
+      end subroutine dtrttp
+   end interface lapack_trttp
 
 contains
 
@@ -498,5 +575,102 @@ contains
 
       if (present(info)) info = l_info
    end subroutine pic_dgesvd
+
+
+   subroutine pic_stpttr(AP, A, uplo, info)
+      !! packed triangular -> full storage; writes only the uplo triangle
+      real(sp), intent(in) :: AP(:)
+      real(sp), intent(inout) :: A(:, :)
+      character(len=1), intent(in), optional :: uplo
+      integer(default_int), intent(out), optional :: info
+      character(len=1) :: l_uplo
+      integer(default_int) :: n, lda, l_info
+
+      if (present(uplo)) then
+         l_uplo = uplo
+      else
+         l_uplo = "U"
+      end if
+
+      n = size(A, 2)
+      lda = max(1, size(A, 1))
+
+      call lapack_tpttr(l_uplo, n, AP, A, lda, l_info)
+
+      if (present(info)) info = l_info
+
+   end subroutine pic_stpttr
+
+   subroutine pic_dtpttr(AP, A, uplo, info)
+      !! packed triangular -> full storage; writes only the uplo triangle
+      real(dp), intent(in) :: AP(:)
+      real(dp), intent(inout) :: A(:, :)
+      character(len=1), intent(in), optional :: uplo
+      integer(default_int), intent(out), optional :: info
+      character(len=1) :: l_uplo
+      integer(default_int) :: n, lda, l_info
+
+      if (present(uplo)) then
+         l_uplo = uplo
+      else
+         l_uplo = "U"
+      end if
+
+      n = size(A, 2)
+      lda = max(1, size(A, 1))
+
+      call lapack_tpttr(l_uplo, n, AP, A, lda, l_info)
+
+      if (present(info)) info = l_info
+
+   end subroutine pic_dtpttr
+
+   subroutine pic_strttp(A, AP, uplo, info)
+      !! full storage -> packed triangular; reads only the uplo triangle
+      real(sp), intent(in) :: A(:, :)
+      real(sp), intent(out) :: AP(:)
+      character(len=1), intent(in), optional :: uplo
+      integer(default_int), intent(out), optional :: info
+      character(len=1) :: l_uplo
+      integer(default_int) :: n, lda, l_info
+
+      if (present(uplo)) then
+         l_uplo = uplo
+      else
+         l_uplo = "U"
+      end if
+
+      n = size(A, 2)
+      lda = max(1, size(A, 1))
+
+      call lapack_trttp(l_uplo, n, A, lda, AP, l_info)
+
+      if (present(info)) info = l_info
+
+   end subroutine pic_strttp
+
+   subroutine pic_dtrttp(A, AP, uplo, info)
+      !! full storage -> packed triangular; reads only the uplo triangle
+      real(dp), intent(in) :: A(:, :)
+      real(dp), intent(out) :: AP(:)
+      character(len=1), intent(in), optional :: uplo
+      integer(default_int), intent(out), optional :: info
+      character(len=1) :: l_uplo
+      integer(default_int) :: n, lda, l_info
+
+      if (present(uplo)) then
+         l_uplo = uplo
+      else
+         l_uplo = "U"
+      end if
+
+      n = size(A, 2)
+      lda = max(1, size(A, 1))
+
+      call lapack_trttp(l_uplo, n, A, lda, AP, l_info)
+
+      if (present(info)) info = l_info
+
+   end subroutine pic_dtrttp
 
 end module pic_lapack_interfaces
