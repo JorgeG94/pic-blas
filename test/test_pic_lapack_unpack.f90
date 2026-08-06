@@ -16,8 +16,8 @@ module test_pic_lapack_interfaces_unpack
    !  points are 56 and 2560; getting these wrong is how a rewrite of one
    !  branch passes while another stays broken.
    integer(default_int), parameter :: regime_sizes(6) = &
-      [7_default_int, 55_default_int, 56_default_int, &
-       200_default_int, 2559_default_int, 2560_default_int]
+                                      [7_default_int, 55_default_int, 56_default_int, &
+                                       200_default_int, 2559_default_int, 2560_default_int]
 
 contains
 
