@@ -20,7 +20,9 @@ contains
 
    subroutine test_sscal_alpha(error)
       type(error_type), allocatable, intent(out) :: error
-      real(sp) :: x(3), alpha, expected(3)
+      real(sp) ::  alpha
+      real(sp) :: expected(3)
+      real(sp) :: x(3)
       real(sp), parameter :: tol = 1.0e-6_sp
 
       ! Initialize vector and scalar
@@ -36,7 +38,9 @@ contains
 
    subroutine test_dscal_alpha(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: x(3), alpha, expected(3)
+      real(dp) ::  alpha
+      real(dp) :: expected(3)
+      real(dp) :: x(3)
       real(dp), parameter :: tol = 1.0e-6_dp
 
       ! Initialize vector and scalar
@@ -52,7 +56,9 @@ contains
 
    subroutine test_sscal_default(error)
       type(error_type), allocatable, intent(out) :: error
-      real(sp) :: x(3), alpha, expected(3)
+      real(sp) ::  alpha
+      real(sp) :: expected(3)
+      real(sp) :: x(3)
       real(sp), parameter :: tol = 1.0e-6_sp
 
       ! Initialize vector and scalar
@@ -68,7 +74,9 @@ contains
 
    subroutine test_dscal_default(error)
       type(error_type), allocatable, intent(out) :: error
-      real(dp) :: x(3), alpha, expected(3)
+      real(dp) ::  alpha
+      real(dp) :: expected(3)
+      real(dp) :: x(3)
       real(dp), parameter :: tol = 1.0e-6_dp
 
       ! Initialize vector and scalar
