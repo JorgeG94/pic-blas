@@ -547,7 +547,6 @@ module pic_blas_interfaces
       module procedure :: pic_dger_x
    end interface pic_ger_x
 
-
    interface blas_ger
       !! not a public interface, used internally by pic_ger
       pure subroutine sger(m, n, alpha, x, incx, y, incy, a, lda)

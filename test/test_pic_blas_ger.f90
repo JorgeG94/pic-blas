@@ -8,7 +8,7 @@ module test_pic_blas_interfaces_ger
    !! here works on a padded array and checks the padding is left alone.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_blas_interfaces, only: pic_ger, pic_ger_x, pic_gemv_x, pic_gemv, &
-                                 pic_dgemv_x, pic_dger_x
+                                  pic_dgemv_x, pic_dger_x
    use pic_types, only: sp, dp, default_int
    implicit none
    private
