@@ -24,6 +24,7 @@ module pic_blas_interfaces
    ! depending on the data type of the arguments
    ! this _needs_ allocatable arrays since we deduce shapes from the arrays themselves
    public :: pic_gemm, pic_gemv, pic_asum, pic_axpy, pic_copy, pic_dot, pic_scal, pic_iamax
+   public :: pic_symm, pic_syrk, pic_syr2k
 
    ! tested
    interface pic_gemm
@@ -139,6 +140,53 @@ module pic_blas_interfaces
       module procedure :: pic_isamax
       module procedure :: pic_idamax
    end interface pic_iamax
+
+   interface pic_symm
+      !! general interface of the BLAS SYMM routines, will call SSYMM, DSYMM
+      !!
+      !! Usage: call pic_symm(A, B, C, [side], [uplo], [alpha], [beta])
+      !!
+      !! C := alpha*A*B + beta*C with A symmetric (side "L", the default), or
+      !! C := alpha*B*A + beta*C (side "R"). Only the triangle of A named by
+      !! uplo ("U" by default) is read.
+      !!
+      !! This is the one to reach for when a symmetric matrix has been
+      !! expanded to a full square and would otherwise go through GEMM: it
+      !! does half the work for the same result.
+      module procedure :: pic_ssymm
+      module procedure :: pic_dsymm
+   end interface pic_symm
+
+   interface pic_syrk
+      !! general interface of the BLAS SYRK routines, will call SSYRK, DSYRK
+      !!
+      !! Usage: call pic_syrk(A, C, [uplo], [trans], [alpha], [beta])
+      !!
+      !! C := alpha*A*A**T + beta*C  (trans "N", the default)
+      !! C := alpha*A**T*A + beta*C  (trans "T")
+      !!
+      !! C is symmetric and only the uplo triangle is written. Half the flops
+      !! of the equivalent GEMM, and the result is symmetric by construction
+      !! rather than by assumption.
+      module procedure :: pic_ssyrk
+      module procedure :: pic_dsyrk
+   end interface pic_syrk
+
+   interface pic_syr2k
+      !! general interface of the BLAS SYR2K routines, will call SSYR2K, DSYR2K
+      !!
+      !! Usage: call pic_syr2k(A, B, C, [uplo], [trans], [alpha], [beta])
+      !!
+      !! C := alpha*A*B**T + alpha*B*A**T + beta*C  (trans "N", the default)
+      !! C := alpha*A**T*B + alpha*B**T*A + beta*C  (trans "T")
+      !!
+      !! Worth knowing: when A**T*B is itself symmetric, B**T*A is the same
+      !! matrix, so trans="T" with alpha=0.5 yields exactly the triangle of
+      !! A**T*B for half a GEMM's work. That is the shape a congruence
+      !! transformation C**T*Y*C takes once Y*C has been formed.
+      module procedure :: pic_ssyr2k
+      module procedure :: pic_dsyr2k
+   end interface pic_syr2k
 
    interface blas_asum
       !! this is the interface for the BLAS ASUM routines, it will call SASUM, DASUM, SCASUM, DZASUM
@@ -498,6 +546,110 @@ module pic_blas_interfaces
       end subroutine zgemm
    end interface blas_gemm
 
+   interface blas_symm
+      !! not a public interface, used internally by pic_symm
+      pure subroutine ssymm(side, uplo, m, n, alpha, a, lda, b, ldb, beta, c, ldc)
+         import :: sp, default_int
+         implicit none
+         character(len=1), intent(in) :: side
+         character(len=1), intent(in) :: uplo
+         integer(default_int), intent(in) :: m
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: lda
+         integer(default_int), intent(in) :: ldb
+         integer(default_int), intent(in) :: ldc
+         real(sp), intent(in) :: alpha
+         real(sp), intent(in) :: beta
+         real(sp), intent(in) :: a(lda, *)
+         real(sp), intent(in) :: b(ldb, *)
+         real(sp), intent(inout) :: c(ldc, *)
+      end subroutine ssymm
+      pure subroutine dsymm(side, uplo, m, n, alpha, a, lda, b, ldb, beta, c, ldc)
+         import :: dp, default_int
+         implicit none
+         character(len=1), intent(in) :: side
+         character(len=1), intent(in) :: uplo
+         integer(default_int), intent(in) :: m
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: lda
+         integer(default_int), intent(in) :: ldb
+         integer(default_int), intent(in) :: ldc
+         real(dp), intent(in) :: alpha
+         real(dp), intent(in) :: beta
+         real(dp), intent(in) :: a(lda, *)
+         real(dp), intent(in) :: b(ldb, *)
+         real(dp), intent(inout) :: c(ldc, *)
+      end subroutine dsymm
+   end interface blas_symm
+
+   interface blas_syrk
+      !! not a public interface, used internally by pic_syrk
+      pure subroutine ssyrk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc)
+         import :: sp, default_int
+         implicit none
+         character(len=1), intent(in) :: uplo
+         character(len=1), intent(in) :: trans
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: k
+         integer(default_int), intent(in) :: lda
+         integer(default_int), intent(in) :: ldc
+         real(sp), intent(in) :: alpha
+         real(sp), intent(in) :: beta
+         real(sp), intent(in) :: a(lda, *)
+         real(sp), intent(inout) :: c(ldc, *)
+      end subroutine ssyrk
+      pure subroutine dsyrk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc)
+         import :: dp, default_int
+         implicit none
+         character(len=1), intent(in) :: uplo
+         character(len=1), intent(in) :: trans
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: k
+         integer(default_int), intent(in) :: lda
+         integer(default_int), intent(in) :: ldc
+         real(dp), intent(in) :: alpha
+         real(dp), intent(in) :: beta
+         real(dp), intent(in) :: a(lda, *)
+         real(dp), intent(inout) :: c(ldc, *)
+      end subroutine dsyrk
+   end interface blas_syrk
+
+   interface blas_syr2k
+      !! not a public interface, used internally by pic_syr2k
+      pure subroutine ssyr2k(uplo, trans, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
+         import :: sp, default_int
+         implicit none
+         character(len=1), intent(in) :: uplo
+         character(len=1), intent(in) :: trans
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: k
+         integer(default_int), intent(in) :: lda
+         integer(default_int), intent(in) :: ldb
+         integer(default_int), intent(in) :: ldc
+         real(sp), intent(in) :: alpha
+         real(sp), intent(in) :: beta
+         real(sp), intent(in) :: a(lda, *)
+         real(sp), intent(in) :: b(ldb, *)
+         real(sp), intent(inout) :: c(ldc, *)
+      end subroutine ssyr2k
+      pure subroutine dsyr2k(uplo, trans, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
+         import :: dp, default_int
+         implicit none
+         character(len=1), intent(in) :: uplo
+         character(len=1), intent(in) :: trans
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: k
+         integer(default_int), intent(in) :: lda
+         integer(default_int), intent(in) :: ldb
+         integer(default_int), intent(in) :: ldc
+         real(dp), intent(in) :: alpha
+         real(dp), intent(in) :: beta
+         real(dp), intent(in) :: a(lda, *)
+         real(dp), intent(in) :: b(ldb, *)
+         real(dp), intent(inout) :: c(ldc, *)
+      end subroutine dsyr2k
+   end interface blas_syr2k
+
 contains
 
    pure subroutine pic_sgemm(A, B, C, transa, transb, alpha, beta)
@@ -607,6 +759,288 @@ contains
       call blas_gemm(OP_A, OP_B, m, n, k, l_alpha, A, lda, B, ldb, l_beta, C, ldc)
 
    end subroutine pic_dgemm
+
+   pure subroutine pic_ssymm(A, B, C, side, uplo, alpha, beta)
+      !! symmetric matrix times general matrix
+      real(sp), intent(in) :: A(:, :)
+      real(sp), intent(in) :: B(:, :)
+      real(sp), intent(inout) :: C(:, :)
+      character(len=1), intent(in), optional :: side
+      character(len=1), intent(in), optional :: uplo
+      real(sp), intent(in), optional :: alpha
+      real(sp), intent(in), optional :: beta
+      character(len=1) :: l_side, l_uplo
+      real(sp) :: l_alpha, l_beta
+      integer(default_int) :: m, n, lda, ldb, ldc
+
+      if (present(alpha)) then
+         l_alpha = alpha
+      else
+         l_alpha = 1.0_sp
+      end if
+      if (present(beta)) then
+         l_beta = beta
+      else
+         l_beta = 0.0_sp
+      end if
+      if (present(side)) then
+         l_side = side
+      else
+         l_side = "L"
+      end if
+      if (present(uplo)) then
+         l_uplo = uplo
+      else
+         l_uplo = "U"
+      end if
+
+      ! the shape of C fixes the problem: A is m x m for side "L" and n x n
+      ! for side "R", which the caller has already had to get right for the
+      ! shapes to be conformable at all
+      m = size(C, 1)
+      n = size(C, 2)
+      lda = max(1, size(A, 1))
+      ldb = max(1, size(B, 1))
+      ldc = max(1, size(C, 1))
+
+      call blas_symm(l_side, l_uplo, m, n, l_alpha, A, lda, B, ldb, l_beta, C, ldc)
+
+   end subroutine pic_ssymm
+
+   pure subroutine pic_dsymm(A, B, C, side, uplo, alpha, beta)
+      !! symmetric matrix times general matrix
+      real(dp), intent(in) :: A(:, :)
+      real(dp), intent(in) :: B(:, :)
+      real(dp), intent(inout) :: C(:, :)
+      character(len=1), intent(in), optional :: side
+      character(len=1), intent(in), optional :: uplo
+      real(dp), intent(in), optional :: alpha
+      real(dp), intent(in), optional :: beta
+      character(len=1) :: l_side, l_uplo
+      real(dp) :: l_alpha, l_beta
+      integer(default_int) :: m, n, lda, ldb, ldc
+
+      if (present(alpha)) then
+         l_alpha = alpha
+      else
+         l_alpha = 1.0_dp
+      end if
+      if (present(beta)) then
+         l_beta = beta
+      else
+         l_beta = 0.0_dp
+      end if
+      if (present(side)) then
+         l_side = side
+      else
+         l_side = "L"
+      end if
+      if (present(uplo)) then
+         l_uplo = uplo
+      else
+         l_uplo = "U"
+      end if
+
+      ! the shape of C fixes the problem: A is m x m for side "L" and n x n
+      ! for side "R", which the caller has already had to get right for the
+      ! shapes to be conformable at all
+      m = size(C, 1)
+      n = size(C, 2)
+      lda = max(1, size(A, 1))
+      ldb = max(1, size(B, 1))
+      ldc = max(1, size(C, 1))
+
+      call blas_symm(l_side, l_uplo, m, n, l_alpha, A, lda, B, ldb, l_beta, C, ldc)
+
+   end subroutine pic_dsymm
+
+   pure subroutine pic_ssyrk(A, C, uplo, trans, alpha, beta)
+      !! symmetric rank-k update
+      real(sp), intent(in) :: A(:, :)
+      real(sp), intent(inout) :: C(:, :)
+      character(len=1), intent(in), optional :: uplo
+      character(len=1), intent(in), optional :: trans
+      real(sp), intent(in), optional :: alpha
+      real(sp), intent(in), optional :: beta
+      character(len=1) :: l_uplo, l_trans
+      real(sp) :: l_alpha, l_beta
+      integer(default_int) :: n, k, lda, ldc
+
+      if (present(alpha)) then
+         l_alpha = alpha
+      else
+         l_alpha = 1.0_sp
+      end if
+      if (present(beta)) then
+         l_beta = beta
+      else
+         l_beta = 0.0_sp
+      end if
+      if (present(uplo)) then
+         l_uplo = uplo
+      else
+         l_uplo = "U"
+      end if
+      if (present(trans)) then
+         l_trans = trans
+      else
+         l_trans = "N"
+      end if
+
+      n = size(C, 1)
+      if (l_trans == "N" .or. l_trans == "n") then
+         k = size(A, 2)
+      else
+         k = size(A, 1)
+      end if
+      lda = max(1, size(A, 1))
+      ldc = max(1, size(C, 1))
+
+      call blas_syrk(l_uplo, l_trans, n, k, l_alpha, A, lda, l_beta, C, ldc)
+
+   end subroutine pic_ssyrk
+
+   pure subroutine pic_dsyrk(A, C, uplo, trans, alpha, beta)
+      !! symmetric rank-k update
+      real(dp), intent(in) :: A(:, :)
+      real(dp), intent(inout) :: C(:, :)
+      character(len=1), intent(in), optional :: uplo
+      character(len=1), intent(in), optional :: trans
+      real(dp), intent(in), optional :: alpha
+      real(dp), intent(in), optional :: beta
+      character(len=1) :: l_uplo, l_trans
+      real(dp) :: l_alpha, l_beta
+      integer(default_int) :: n, k, lda, ldc
+
+      if (present(alpha)) then
+         l_alpha = alpha
+      else
+         l_alpha = 1.0_dp
+      end if
+      if (present(beta)) then
+         l_beta = beta
+      else
+         l_beta = 0.0_dp
+      end if
+      if (present(uplo)) then
+         l_uplo = uplo
+      else
+         l_uplo = "U"
+      end if
+      if (present(trans)) then
+         l_trans = trans
+      else
+         l_trans = "N"
+      end if
+
+      n = size(C, 1)
+      if (l_trans == "N" .or. l_trans == "n") then
+         k = size(A, 2)
+      else
+         k = size(A, 1)
+      end if
+      lda = max(1, size(A, 1))
+      ldc = max(1, size(C, 1))
+
+      call blas_syrk(l_uplo, l_trans, n, k, l_alpha, A, lda, l_beta, C, ldc)
+
+   end subroutine pic_dsyrk
+
+   pure subroutine pic_ssyr2k(A, B, C, uplo, trans, alpha, beta)
+      !! symmetric rank-2k update
+      real(sp), intent(in) :: A(:, :)
+      real(sp), intent(in) :: B(:, :)
+      real(sp), intent(inout) :: C(:, :)
+      character(len=1), intent(in), optional :: uplo
+      character(len=1), intent(in), optional :: trans
+      real(sp), intent(in), optional :: alpha
+      real(sp), intent(in), optional :: beta
+      character(len=1) :: l_uplo, l_trans
+      real(sp) :: l_alpha, l_beta
+      integer(default_int) :: n, k, lda, ldb, ldc
+
+      if (present(alpha)) then
+         l_alpha = alpha
+      else
+         l_alpha = 1.0_sp
+      end if
+      if (present(beta)) then
+         l_beta = beta
+      else
+         l_beta = 0.0_sp
+      end if
+      if (present(uplo)) then
+         l_uplo = uplo
+      else
+         l_uplo = "U"
+      end if
+      if (present(trans)) then
+         l_trans = trans
+      else
+         l_trans = "N"
+      end if
+
+      n = size(C, 1)
+      if (l_trans == "N" .or. l_trans == "n") then
+         k = size(A, 2)
+      else
+         k = size(A, 1)
+      end if
+      lda = max(1, size(A, 1))
+      ldb = max(1, size(B, 1))
+      ldc = max(1, size(C, 1))
+
+      call blas_syr2k(l_uplo, l_trans, n, k, l_alpha, A, lda, B, ldb, l_beta, C, ldc)
+
+   end subroutine pic_ssyr2k
+
+   pure subroutine pic_dsyr2k(A, B, C, uplo, trans, alpha, beta)
+      !! symmetric rank-2k update
+      real(dp), intent(in) :: A(:, :)
+      real(dp), intent(in) :: B(:, :)
+      real(dp), intent(inout) :: C(:, :)
+      character(len=1), intent(in), optional :: uplo
+      character(len=1), intent(in), optional :: trans
+      real(dp), intent(in), optional :: alpha
+      real(dp), intent(in), optional :: beta
+      character(len=1) :: l_uplo, l_trans
+      real(dp) :: l_alpha, l_beta
+      integer(default_int) :: n, k, lda, ldb, ldc
+
+      if (present(alpha)) then
+         l_alpha = alpha
+      else
+         l_alpha = 1.0_dp
+      end if
+      if (present(beta)) then
+         l_beta = beta
+      else
+         l_beta = 0.0_dp
+      end if
+      if (present(uplo)) then
+         l_uplo = uplo
+      else
+         l_uplo = "U"
+      end if
+      if (present(trans)) then
+         l_trans = trans
+      else
+         l_trans = "N"
+      end if
+
+      n = size(C, 1)
+      if (l_trans == "N" .or. l_trans == "n") then
+         k = size(A, 2)
+      else
+         k = size(A, 1)
+      end if
+      lda = max(1, size(A, 1))
+      ldb = max(1, size(B, 1))
+      ldc = max(1, size(C, 1))
+
+      call blas_syr2k(l_uplo, l_trans, n, k, l_alpha, A, lda, B, ldb, l_beta, C, ldc)
+
+   end subroutine pic_dsyr2k
 
    pure subroutine pic_sgemv(A, x, y, trans_a, alpha, beta)
       !! interface for single precision matrix-vector multiplication
