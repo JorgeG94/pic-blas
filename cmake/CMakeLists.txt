@@ -17,11 +17,19 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
       "-Wall -Wextra -Wpedantic -Wsurprising -Waliasing -Wampersand -Warray-bounds -Wcharacter-truncation -Wconversion -Wline-truncation -Wintrinsics-std -Wno-tabs -Wunderflow -Wunused-parameter -Wintrinsic-shadow -Wno-align-commons -Wsurprising"
   )
   set(fpe "-ffpe-trap=invalid,zero,overflow")
-elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-  set(standard_compile_flags "-traceback")
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+  # -auto is required for thread safety: Intel's default -auto-scalar keeps
+  # local scalars of INTEGER/REAL/COMPLEX/LOGICAL on the stack but leaves
+  # CHARACTER locals in static storage. The transpose/uplo/side/jobz flags in
+  # the BLAS and LAPACK wrappers are character(len=1) locals, so without -auto
+  # they are shared by every thread and race whenever a caller runs these inside
+  # an OpenMP region -- MKL then sees a TRANSA that disagrees with the LDA
+  # computed from it and reports "Condition -1/-8 detected in function DGEMM".
+  set(standard_compile_flags "-traceback -auto")
   set(fpe "-check all -fpe0")
-elseif(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
-  set(standard_compile_flags "-axAVX2 -traceback")
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
+  # see the -auto note above
+  set(standard_compile_flags "-axAVX2 -traceback -auto")
   set(fpe "-check all -fpe0")
 elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "NVHPC")
   set(standard_compile_flags "-traceback")
