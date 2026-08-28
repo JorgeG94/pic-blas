@@ -24,7 +24,7 @@ module pic_blas_interfaces
    ! depending on the data type of the arguments
    ! this _needs_ allocatable arrays since we deduce shapes from the arrays themselves
    public :: pic_gemm, pic_gemv, pic_asum, pic_axpy, pic_copy, pic_dot, pic_scal, pic_iamax
-   public :: pic_symm, pic_syrk, pic_syr2k
+   public :: pic_symm, pic_syrk, pic_syr2k, pic_trsm
    public :: pic_gemm_x, pic_gemv_x, pic_ger, pic_ger_x
    public :: pic_dot_x, pic_axpy_x, pic_copy_x, pic_scal_x
    public :: pic_sdot_x, pic_ddot_x, pic_saxpy_x, pic_daxpy_x
@@ -146,6 +146,33 @@ module pic_blas_interfaces
       module procedure :: pic_isamax
       module procedure :: pic_idamax
    end interface pic_iamax
+
+   interface pic_trsm
+      !! general interface of the BLAS TRSM routines, will call STRSM, DTRSM
+      !!
+      !! Usage: call pic_trsm(A, B, [side], [uplo], [transa], [diag], [alpha])
+      !!
+      !! Solves a triangular system with many right-hand sides, in place:
+      !!
+      !!    B := alpha * op(A)**-1 * B     side "L", the default
+      !!    B := alpha * B * op(A)**-1     side "R"
+      !!
+      !! with op(A) = A for transa "N" (the default) and A**T for "T". A is
+      !! triangular, and only the triangle named by uplo ("U" by default) is
+      !! read; diag "U" takes the diagonal to be unit and does not read it.
+      !!
+      !! **B is overwritten by the solution.** Nothing is allocated and no copy
+      !! of B is kept, which is the reason to reach for this over forming an
+      !! inverse: applying A**-1 to a tall B costs half of what multiplying by
+      !! a formed inverse does, and the inverse of an ill-conditioned triangle
+      !! is the less accurate of the two objects as well as the more expensive.
+      !!
+      !! A must be square, and its order is fixed by the side: m for "L", n for
+      !! "R", where B is m x n. That is not checked here -- BLAS reports it, and
+      !! the shapes cannot be conformable if it is wrong.
+      module procedure :: pic_strsm
+      module procedure :: pic_dtrsm
+   end interface pic_trsm
 
    interface pic_symm
       !! general interface of the BLAS SYMM routines, will call SSYMM, DSYMM
@@ -691,6 +718,40 @@ module pic_blas_interfaces
       end subroutine zgemm
    end interface blas_gemm
 
+   interface blas_trsm
+      !! not a public interface, used internally by pic_trsm
+      pure subroutine strsm(side, uplo, transa, diag, m, n, alpha, a, lda, b, ldb)
+         import :: sp, default_int
+         implicit none
+         character(len=1), intent(in) :: side
+         character(len=1), intent(in) :: uplo
+         character(len=1), intent(in) :: transa
+         character(len=1), intent(in) :: diag
+         integer(default_int), intent(in) :: m
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: lda
+         integer(default_int), intent(in) :: ldb
+         real(sp), intent(in) :: alpha
+         real(sp), intent(in) :: a(lda, *)
+         real(sp), intent(inout) :: b(ldb, *)
+      end subroutine strsm
+      pure subroutine dtrsm(side, uplo, transa, diag, m, n, alpha, a, lda, b, ldb)
+         import :: dp, default_int
+         implicit none
+         character(len=1), intent(in) :: side
+         character(len=1), intent(in) :: uplo
+         character(len=1), intent(in) :: transa
+         character(len=1), intent(in) :: diag
+         integer(default_int), intent(in) :: m
+         integer(default_int), intent(in) :: n
+         integer(default_int), intent(in) :: lda
+         integer(default_int), intent(in) :: ldb
+         real(dp), intent(in) :: alpha
+         real(dp), intent(in) :: a(lda, *)
+         real(dp), intent(inout) :: b(ldb, *)
+      end subroutine dtrsm
+   end interface blas_trsm
+
    interface blas_symm
       !! not a public interface, used internally by pic_symm
       pure subroutine ssymm(side, uplo, m, n, alpha, a, lda, b, ldb, beta, c, ldc)
@@ -951,6 +1012,73 @@ contains
       call blas_symm(l_side, l_uplo, m, n, l_alpha, A, lda, B, ldb, l_beta, C, ldc)
 
    end subroutine pic_ssymm
+
+   pure subroutine pic_dtrsm(A, B, side, uplo, transa, diag, alpha)
+      !! triangular solve with many right-hand sides, double precision
+      real(dp), intent(in) :: A(:, :)
+      real(dp), intent(inout) :: B(:, :)
+      character(len=1), intent(in), optional :: side
+      character(len=1), intent(in), optional :: uplo
+      character(len=1), intent(in), optional :: transa
+      character(len=1), intent(in), optional :: diag
+      real(dp), intent(in), optional :: alpha
+      character(len=1) :: l_side, l_uplo, l_transa, l_diag
+      real(dp) :: l_alpha
+      integer(default_int) :: m, n, lda, ldb
+
+      l_side = "L"
+      if (present(side)) l_side = side
+      l_uplo = "U"
+      if (present(uplo)) l_uplo = uplo
+      l_transa = "N"
+      if (present(transa)) l_transa = transa
+      l_diag = "N"
+      if (present(diag)) l_diag = diag
+      l_alpha = 1.0_dp
+      if (present(alpha)) l_alpha = alpha
+
+      ! The shape of B fixes everything: A is m x m for side "L" and n x n for
+      ! side "R", which the caller has already had to get right for the solve
+      ! to mean anything.
+      m = size(B, 1)
+      n = size(B, 2)
+      lda = max(1, size(A, 1))
+      ldb = max(1, size(B, 1))
+
+      call blas_trsm(l_side, l_uplo, l_transa, l_diag, m, n, l_alpha, A, lda, B, ldb)
+   end subroutine pic_dtrsm
+
+   pure subroutine pic_strsm(A, B, side, uplo, transa, diag, alpha)
+      !! triangular solve with many right-hand sides, single precision
+      real(sp), intent(in) :: A(:, :)
+      real(sp), intent(inout) :: B(:, :)
+      character(len=1), intent(in), optional :: side
+      character(len=1), intent(in), optional :: uplo
+      character(len=1), intent(in), optional :: transa
+      character(len=1), intent(in), optional :: diag
+      real(sp), intent(in), optional :: alpha
+      character(len=1) :: l_side, l_uplo, l_transa, l_diag
+      real(sp) :: l_alpha
+      integer(default_int) :: m, n, lda, ldb
+
+      l_side = "L"
+      if (present(side)) l_side = side
+      l_uplo = "U"
+      if (present(uplo)) l_uplo = uplo
+      l_transa = "N"
+      if (present(transa)) l_transa = transa
+      l_diag = "N"
+      if (present(diag)) l_diag = diag
+      l_alpha = 1.0_sp
+      if (present(alpha)) l_alpha = alpha
+
+      m = size(B, 1)
+      n = size(B, 2)
+      lda = max(1, size(A, 1))
+      ldb = max(1, size(B, 1))
+
+      call blas_trsm(l_side, l_uplo, l_transa, l_diag, m, n, l_alpha, A, lda, B, ldb)
+   end subroutine pic_strsm
 
    pure subroutine pic_dsymm(A, B, C, side, uplo, alpha, beta)
       !! symmetric matrix times general matrix
