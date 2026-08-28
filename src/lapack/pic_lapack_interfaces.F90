@@ -61,6 +61,7 @@ module pic_lapack_interfaces
    public :: pic_syev, pic_syevd, pic_gesvd
    public :: pic_tpttr, pic_trttp, pic_unpack, pic_unpack_x
    public :: pic_getrf, pic_getrs, pic_getri, pic_gecon
+   public :: pic_potrf
 
    interface pic_syev
       !! General interface for LAPACK SYEV routines (symmetric eigenvalue problem)
@@ -188,6 +189,26 @@ module pic_lapack_interfaces
       module procedure :: pic_dgetrf
    end interface pic_getrf
 
+   interface pic_potrf
+      !! Cholesky factorisation of a symmetric positive definite matrix
+      !!
+      !! Usage: call pic_potrf(A, [uplo], [info])
+      !!
+      !! A is overwritten by the requested triangle of its factor: U with
+      !! A = U**T*U for uplo="U", L with A = L*L**T for uplo="L". The other
+      !! triangle is left as it was -- LAPACK neither reads nor writes it.
+      !!
+      !! **`info` is a result, not only an error.** A positive value says the
+      !! leading minor of that order is not positive definite, which for a
+      !! matrix that should be is the useful signal that it has gone singular.
+      !! Callers that can fall back on something slower and more forgiving --
+      !! an eigendecomposition, typically -- want to branch on it rather than
+      !! stop. Pass `info` and check it; without it a failed factorisation is
+      !! silent and A is left partly overwritten.
+      module procedure :: pic_spotrf
+      module procedure :: pic_dpotrf
+   end interface pic_potrf
+
    interface pic_getrs
       !! solve A*X = B or A**T*X = B from the factors pic_getrf produced
       !!
@@ -239,6 +260,26 @@ module pic_lapack_interfaces
          integer(default_int), intent(out) :: info
       end subroutine dgetrf
    end interface lapack_getrf
+
+   interface lapack_potrf
+      !! Explicit interface for LAPACK POTRF routines
+      subroutine spotrf(uplo, n, a, lda, info)
+         import :: sp, default_int
+         implicit none
+         character(len=1), intent(in) :: uplo
+         integer(default_int), intent(in) :: n, lda
+         real(sp), intent(inout) :: a(lda, *)
+         integer(default_int), intent(out) :: info
+      end subroutine spotrf
+      subroutine dpotrf(uplo, n, a, lda, info)
+         import :: dp, default_int
+         implicit none
+         character(len=1), intent(in) :: uplo
+         integer(default_int), intent(in) :: n, lda
+         real(dp), intent(inout) :: a(lda, *)
+         integer(default_int), intent(out) :: info
+      end subroutine dpotrf
+   end interface lapack_potrf
 
    interface lapack_getrs
       !! Explicit interface for LAPACK GETRS routines
@@ -1461,6 +1502,38 @@ contains
       call lapack_getrf(m, n, A, lda, ipiv, l_info)
       if (present(info)) info = l_info
    end subroutine pic_dgetrf
+
+   subroutine pic_dpotrf(A, uplo, info)
+      !! Cholesky factorisation, double precision
+      real(dp), intent(inout) :: A(:, :)
+      character(len=1), intent(in), optional :: uplo
+      integer(default_int), intent(out), optional :: info
+      character(len=1) :: l_uplo
+      integer(default_int) :: n, lda, l_info
+
+      l_uplo = "U"
+      if (present(uplo)) l_uplo = uplo
+      n = size(A, 2, kind=default_int)
+      lda = max(1_default_int, size(A, 1, kind=default_int))
+      call lapack_potrf(l_uplo, n, A, lda, l_info)
+      if (present(info)) info = l_info
+   end subroutine pic_dpotrf
+
+   subroutine pic_spotrf(A, uplo, info)
+      !! Cholesky factorisation, single precision
+      real(sp), intent(inout) :: A(:, :)
+      character(len=1), intent(in), optional :: uplo
+      integer(default_int), intent(out), optional :: info
+      character(len=1) :: l_uplo
+      integer(default_int) :: n, lda, l_info
+
+      l_uplo = "U"
+      if (present(uplo)) l_uplo = uplo
+      n = size(A, 2, kind=default_int)
+      lda = max(1_default_int, size(A, 1, kind=default_int))
+      call lapack_potrf(l_uplo, n, A, lda, l_info)
+      if (present(info)) info = l_info
+   end subroutine pic_spotrf
 
    subroutine pic_dgetrs(A, ipiv, B, trans, info)
       !! solve using the factors from pic_getrf

@@ -20,6 +20,8 @@ program pic_tester
    use test_pic_lapack_interfaces_unpack, only: collect_pic_lapack_unpack_tests
    use test_pic_blas_interfaces_symm, only: collect_pic_symm_tests
    use test_pic_lapack_interfaces_getrf, only: collect_pic_lapack_getrf_tests
+   use test_pic_lapack_interfaces_potrf, only: collect_pic_lapack_potrf_tests
+   use test_pic_blas_interfaces_trsm, only: collect_pic_trsm_tests
    use test_pic_blas_interfaces_ger, only: collect_pic_ger_tests
    use test_pic_blas_interfaces_level1_x, only: collect_pic_level1_x_tests
    ! add here the module you want to test
@@ -35,6 +37,8 @@ program pic_tester
    !allocate (testsuites(ntest_suites))
    ! here you add another test suite to the array
    testsuites = [ &
+                new_testsuite("pic_blas_trsm", collect_pic_trsm_tests), &
+                new_testsuite("pic_lapack_potrf", collect_pic_lapack_potrf_tests), &
                 new_testsuite("pic_blas_sgemm", collect_pic_sgemm_tests), &
                 new_testsuite("pic_blas_dgemm", collect_pic_dgemm_tests), &
                 new_testsuite("pic_blas_sgemv", collect_pic_sgemv_tests), &
