@@ -10,7 +10,7 @@ project(
 set(project_name pic-blas)
 set(main_lib ${project_name})
 set(exe_name exe_${project_name})
-set(all_targets ${main_lib} ${exe_name})
+set(all_targets ${main_lib})
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(GNUInstallDirs)
@@ -21,6 +21,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 include(demo_status)
 
 option(ENABLE_TESTING "Enable testing for ${project_name}" ON)
+option(PBLAS_BUILD_STANDALONE "Build standalone apps for ${project_name}" OFF)
 
 add_subdirectory(cmake)
 
@@ -52,9 +53,12 @@ endif()
 set_target_properties(${main_lib} PROPERTIES Fortran_MODULE_DIRECTORY
                                              ${CMAKE_BINARY_DIR}/modules)
 
-add_executable(${exe_name} ${PROJECT_SOURCE_DIR}/app/main.f90)
-target_include_directories(${exe_name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
-target_link_libraries(${exe_name} PRIVATE ${main_lib})
+if(PBLAS_BUILD_STANDALONE)
+  add_executable(${exe_name} ${PROJECT_SOURCE_DIR}/app/main.f90)
+  target_include_directories(${exe_name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(${exe_name} PRIVATE ${main_lib})
+  list(APPEND all_targets ${exe_name})
+endif()
 
 foreach(tgt ${all_targets})
   message(STATUS "${tgt}")
