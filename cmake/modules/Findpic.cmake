@@ -4,7 +4,7 @@ set(_url "https://github.com/JorgeG94/pic/")
 include("${CMAKE_CURRENT_LIST_DIR}/sample_utils.cmake")
 
 # Use a specific tag
-set(_rev "v0.9.0")
+set(_rev "v0.9.2")
 my_fetch_package("${_lib}" "${_url}" "${_rev}")
 
 # Or use a branch set(_rev "main") my_fetch_package("${_lib}" "${_url}"
