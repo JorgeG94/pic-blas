@@ -4,7 +4,7 @@ cmake_policy(SET CMP0144 NEW)
 project(
   "pic-blas"
   LANGUAGES Fortran C
-  VERSION 0.3.4
+  VERSION 0.3.5
   DESCRIPTION "A simple Fortran interface to BLAS and LAPACK, built on pic")
 
 set(project_name pic-blas)
