@@ -37,8 +37,8 @@ add_library(${main_lib} STATIC)
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
-# pic is PUBLIC, not PRIVATE: pic_blas_interfaces and pic_lapack_interfaces
-# both `use pic_types`, so pic is part of this library's public interface -- a
+# pic is PUBLIC, not PRIVATE: pic_blas_interfaces and pic_lapack_interfaces both
+# `use pic_types`, so pic is part of this library's public interface -- a
 # consumer compiling against our .mod files needs pic's too. PRIVATE hid pic's
 # module directory from everything downstream, including our own test target,
 # and only worked while pic happened to write its .mod files into the top-level
