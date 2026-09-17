@@ -39,8 +39,8 @@ add_executable("${project_name}-blas-tester" "${blas-test-srcs}")
 
 set_target_properties(
   "${project_name}-blas-tester"
-  PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-             Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/test/modules")
+  PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib"
+             Fortran_MODULE_DIRECTORY "${PROJECT_BINARY_DIR}/test/modules")
 target_link_libraries(
   "${project_name}-blas-tester" PRIVATE "${main_lib}" test-drive::test-drive
                                         Threads::Threads)

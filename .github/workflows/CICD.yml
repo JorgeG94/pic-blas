@@ -88,6 +88,51 @@ jobs:
           cmake --build build/release
           ctest --test-dir build/release --output-on-failure
 
+  # Consume pic-blas the way a downstream project does, via FetchContent.
+  # The jobs above build it standalone, where CMAKE_BINARY_DIR and
+  # PROJECT_BINARY_DIR are the same directory, so a target that leaks the
+  # consumer's build tree cannot fail there. This one can.
+  test_consumer:
+    name: ubuntu-latest_gfortran_consumer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Fortran
+        uses: gha3mi/setup-fortran-conda@latest
+        with:
+          compiler: gfortran
+          platform: ubuntu-latest
+          extra-packages: "openblas"
+
+      - name: cmake consume (release)
+        run: |
+          cmake -S ci/consumer -B build/consumer -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_COMPILER=gfortran -DPIC_BLAS_SOURCE_DIR="$PWD" -G Ninja
+          cmake --build build/consumer
+          ctest --test-dir build/consumer -R consumer_runs --no-tests=error --output-on-failure
+
+  # Install pic-blas and consume it with find_package.
+  # Nothing else in CI runs `cmake --install`, so pic-blasConfig.cmake was
+  # never exercised: it could name dependencies that do not resolve, or omit
+  # ones it needs, and every other job would still be green.
+  test_install:
+    name: ubuntu-latest_gfortran_install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Fortran
+        uses: gha3mi/setup-fortran-conda@latest
+        with:
+          compiler: gfortran
+          platform: ubuntu-latest
+          extra-packages: "openblas"
+
+      - name: cmake install and consume (release)
+        run: |
+          cmake -S . -B build/inst -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_COMPILER=gfortran -DENABLE_TESTING=OFF -DCMAKE_INSTALL_PREFIX="$PWD/prefix" -G Ninja
+          cmake --build build/inst
+          cmake --install build/inst
+          cmake -S ci/installed-consumer -B build/inst-consumer -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_PREFIX_PATH="$PWD/prefix" -G Ninja
+          cmake --build build/inst-consumer
+          ctest --test-dir build/inst-consumer -R installed_consumer_runs --no-tests=error --output-on-failure
+
   # Run Fortran linter with Fortitude
   linter_fortitude:
     name: Run Fortitude Linter
