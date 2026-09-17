@@ -1,3 +1,18 @@
 @PACKAGE_INIT@
 
+include(CMakeFindDependencyMacro)
+
+# pic is on our PUBLIC interface -- pic_blas_interfaces and pic_lapack_interfaces
+# both `use pic_types`, so a consumer compiling against our .mod files needs
+# pic's too. pic-blasTargets.cmake names pic::pic, and nothing would define it
+# without this.
+find_dependency(pic)
+
+# BLAS and LAPACK are PRIVATE, but we are a STATIC library: a static archive
+# does not link its own dependencies, so CMake exports these as
+# $<LINK_ONLY:...> and the consumer is the one that has to resolve them.
+# Omitting them leaves BLAS::BLAS and LAPACK::LAPACK undefined at link time.
+find_dependency(BLAS)
+find_dependency(LAPACK)
+
 include("${CMAKE_CURRENT_LIST_DIR}/pic-blasTargets.cmake")

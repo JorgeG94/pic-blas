@@ -5,7 +5,7 @@ project(
   "pic-blas"
   LANGUAGES Fortran C
   VERSION 0.3.4
-  DESCRIPTION "ADD YOUR DESCRIPTION HERE")
+  DESCRIPTION "A simple Fortran interface to BLAS and LAPACK, built on pic")
 
 set(project_name pic-blas)
 set(main_lib ${project_name})
@@ -20,6 +20,14 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 include(demo_status)
 
 option(ENABLE_TESTING "Enable testing for ${project_name}" ON)
+
+# pic's test suite is pic's to run, and pic's CI runs it. Building it here
+# doubles our slowest job and lets a bug in a dependency fail our build, which
+# it has. A cache default rather than FORCE, so -DPIC_ENABLE_TESTING=ON still
+# works for anyone who wants the integration signal locally.
+set(PIC_ENABLE_TESTING
+    OFF
+    CACHE BOOL "Build pic's own test suite as part of this build")
 
 add_subdirectory(cmake)
 
