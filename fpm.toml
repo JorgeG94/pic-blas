@@ -11,7 +11,7 @@ suffixes = ["F90", "f90"]
 source-dir = "src"
 [build]
 link=["openblas"]
-auto-executables = true
+auto-executables = false
 auto-tests = false
 #auto-examples = true
 module-naming = false
