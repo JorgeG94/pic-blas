@@ -17,8 +17,13 @@ enable_testing()
 
 include(FetchContent)
 
-# A consumer wants the library, not pic-blas's test suite.
+# A consumer wants the library, not the dependency chain's test suites.
+# ENABLE_TESTING is pic-blas's own switch; PIC_ENABLE_TESTING is pic's, and
+# without it pic's 40-odd tests get built and run inside this job.
 set(ENABLE_TESTING
+    OFF
+    CACHE BOOL "" FORCE)
+set(PIC_ENABLE_TESTING
     OFF
     CACHE BOOL "" FORCE)
 
