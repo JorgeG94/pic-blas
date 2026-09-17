@@ -88,6 +88,27 @@ jobs:
           cmake --build build/release
           ctest --test-dir build/release --output-on-failure
 
+  # Consume pic-blas the way a downstream project does, via FetchContent.
+  # The jobs above build it standalone, where CMAKE_BINARY_DIR and
+  # PROJECT_BINARY_DIR are the same directory, so a target that leaks the
+  # consumer's build tree cannot fail there. This one can.
+  test_consumer:
+    name: ubuntu-latest_gfortran_consumer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Fortran
+        uses: gha3mi/setup-fortran-conda@latest
+        with:
+          compiler: gfortran
+          platform: ubuntu-latest
+          extra-packages: "openblas"
+
+      - name: cmake consume (release)
+        run: |
+          cmake -S ci/consumer -B build/consumer -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_COMPILER=gfortran -DPIC_BLAS_SOURCE_DIR="$PWD" -G Ninja
+          cmake --build build/consumer
+          ctest --test-dir build/consumer --output-on-failure
+
   # Run Fortran linter with Fortitude
   linter_fortitude:
     name: Run Fortitude Linter

@@ -4,7 +4,7 @@ cmake_policy(SET CMP0144 NEW)
 project(
   "pic-blas"
   LANGUAGES Fortran C
-  VERSION 0.3.3
+  VERSION 0.3.4
   DESCRIPTION "ADD YOUR DESCRIPTION HERE")
 
 set(project_name pic-blas)
@@ -34,6 +34,12 @@ if(NOT TARGET pic::pic)
 endif()
 
 add_library(${main_lib} STATIC)
+# A real ALIAS, so a consumer that looks for ${project_name}::${project_name}
+# finds one. Without it a consumer's fetch helper invents an INTERFACE IMPORTED
+# target instead, and CMake validates INTERFACE_INCLUDE_DIRECTORIES on imported
+# targets -- which is what made the module directory below a hard configure
+# error downstream rather than merely the wrong directory.
+add_library(${project_name}::${project_name} ALIAS ${main_lib})
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
@@ -55,13 +61,23 @@ if(ENABLE_TESTING)
   add_subdirectory(test)
 endif()
 
+# PROJECT_BINARY_DIR, never CMAKE_BINARY_DIR: as a subproject the latter is the
+# *consumer's* top-level build tree, so we would write our .mod files into their
+# module directory, export their path as ours, and install whatever they happen
+# to have there. Standalone the two are the same directory, which is why this
+# stood until someone consumed us with FetchContent.
 set_target_properties(${main_lib} PROPERTIES Fortran_MODULE_DIRECTORY
-                                             ${CMAKE_BINARY_DIR}/modules)
+                                             ${PROJECT_BINARY_DIR}/modules)
+
+# CMake checks that an imported target's include directories exist at generate
+# time, and Fortran_MODULE_DIRECTORY is not created until build time. Create it
+# now so a consumer configuring from a clean tree does not fail that check.
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/modules)
 
 # Carry our own module directory to anyone who links us, so no consumer has to
-# hardcode where the .mod files land -- the same spelling that just broke.
+# hardcode where the .mod files land.
 target_include_directories(
-  ${main_lib} INTERFACE $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/modules>)
+  ${main_lib} INTERFACE $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/modules>)
 
 foreach(tgt ${all_targets})
   message(STATUS "${tgt}")
@@ -74,7 +90,7 @@ foreach(tgt ${all_targets})
 endforeach()
 
 install(
-  DIRECTORY ${CMAKE_BINARY_DIR}/modules/
+  DIRECTORY ${PROJECT_BINARY_DIR}/modules/
   DESTINATION include/${project_name}
   FILES_MATCHING
   PATTERN "*.mod")
@@ -118,6 +134,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
     COMMAND lcov --ignore-errors unused --remove coverage.info '/usr/*'
             '*/build/*' --output-file coverage_filtered.info
     COMMAND genhtml coverage_filtered.info --output-directory coverage_report
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     COMMENT "Generating code coverage report")
 endif()
