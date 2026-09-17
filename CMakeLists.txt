@@ -4,12 +4,11 @@ cmake_policy(SET CMP0144 NEW)
 project(
   "pic-blas"
   LANGUAGES Fortran C
-  VERSION 0.0
+  VERSION 0.3.3
   DESCRIPTION "ADD YOUR DESCRIPTION HERE")
 
 set(project_name pic-blas)
 set(main_lib ${project_name})
-set(exe_name exe_${project_name})
 set(all_targets ${main_lib})
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -21,7 +20,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 include(demo_status)
 
 option(ENABLE_TESTING "Enable testing for ${project_name}" ON)
-option(PBLAS_BUILD_STANDALONE "Build standalone apps for ${project_name}" OFF)
 
 add_subdirectory(cmake)
 
@@ -39,7 +37,14 @@ add_library(${main_lib} STATIC)
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
-target_link_libraries(${main_lib} PRIVATE pic::pic BLAS::BLAS LAPACK::LAPACK)
+# pic is PUBLIC, not PRIVATE: pic_blas_interfaces and pic_lapack_interfaces both
+# `use pic_types`, so pic is part of this library's public interface -- a
+# consumer compiling against our .mod files needs pic's too. PRIVATE hid pic's
+# module directory from everything downstream, including our own test target,
+# and only worked while pic happened to write its .mod files into the top-level
+# build tree; pic 0.8.2 moved them into its own, which broke that accident.
+target_link_libraries(${main_lib} PUBLIC pic::pic)
+target_link_libraries(${main_lib} PRIVATE BLAS::BLAS LAPACK::LAPACK)
 
 # Enable position-independent code for shared-library linking support
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -53,12 +58,10 @@ endif()
 set_target_properties(${main_lib} PROPERTIES Fortran_MODULE_DIRECTORY
                                              ${CMAKE_BINARY_DIR}/modules)
 
-if(PBLAS_BUILD_STANDALONE)
-  add_executable(${exe_name} ${PROJECT_SOURCE_DIR}/app/main.f90)
-  target_include_directories(${exe_name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(${exe_name} PRIVATE ${main_lib})
-  list(APPEND all_targets ${exe_name})
-endif()
+# Carry our own module directory to anyone who links us, so no consumer has to
+# hardcode where the .mod files land -- the same spelling that just broke.
+target_include_directories(
+  ${main_lib} INTERFACE $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/modules>)
 
 foreach(tgt ${all_targets})
   message(STATUS "${tgt}")

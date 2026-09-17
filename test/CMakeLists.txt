@@ -41,8 +41,6 @@ set_target_properties(
   "${project_name}-blas-tester"
   PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
              Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/test/modules")
-target_include_directories("${project_name}-blas-tester"
-                           PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(
   "${project_name}-blas-tester" PRIVATE "${main_lib}" test-drive::test-drive
                                         Threads::Threads)

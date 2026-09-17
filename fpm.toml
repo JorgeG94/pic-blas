@@ -1,5 +1,5 @@
 name = "pic-blas"
-version = "0.1.0"
+version = "0.3.3"
 license = "MIT"
 author = "JorgeG94"
 maintainer = "jorgegalvez1694@gmail.com"
@@ -11,7 +11,7 @@ suffixes = ["F90", "f90"]
 source-dir = "src"
 [build]
 link=["openblas"]
-auto-executables = true
+auto-executables = false
 auto-tests = false
 #auto-examples = true
 module-naming = false
@@ -29,7 +29,7 @@ source-form = "free"
 
 [dependencies]
 test-drive.git = "https://github.com/JorgeG94/test-drive"
-pic = { git = "https://github.com/JorgeG94/pic.git", branch = "main"}
+pic = { git = "https://github.com/JorgeG94/pic.git", tag = "v0.9.0"}
 #openmp="*"
 
 [extra.fortitude.check]
